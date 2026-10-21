@@ -60,6 +60,21 @@ behaviour, and describe it in the commit message.
 
 Onboard a project with `/stack:init`, which writes `.claude/project.md` from the template.
 
+## Diagnosing the engine
+
+The engine is measured on real sessions of the projects that use it, from this repository only (nothing of it is
+part of the plugin):
+
+```
+tools/session-metrics/session_metrics.ps1   metrics from Claude Code transcripts of any project (-Project <path>)
+.claude/agents/doctor.md                    project agent: records pending sessions, examines the costliest
+                                            agents and briefs, writes a report; changes nothing else
+diagnostics/                                sessions.csv, agents.csv and the doctor's reports
+```
+
+In a session here, ask for the pending sessions of a project to be examined; the doctor's report is the input for
+engine changes, which are made and versioned as usual. Columns and limits: [diagnostics/README.md](diagnostics/README.md).
+
 ## Changing the engine
 
 - Nothing project-specific: if a change needs a project's path, command, document type or rule, it belongs in that
