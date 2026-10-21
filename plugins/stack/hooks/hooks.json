@@ -3,7 +3,7 @@
     "SessionStart": [
       {
         "hooks": [
-          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.js\"", "timeout": 15 }
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.js\"", "shell": "powershell", "timeout": 15 }
         ]
       }
     ],
@@ -11,7 +11,7 @@
       {
         "matcher": "Edit|Write",
         "hooks": [
-          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/post-edit.js\"", "timeout": 120 }
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/post-edit.js\"", "shell": "powershell", "timeout": 120 }
         ]
       }
     ]

@@ -46,7 +46,8 @@ A contract may override a model in its `Agents` section; the orchestrator passes
 
 ## Install
 
-Requirements: Claude Code and Node.js on `PATH` (for the hooks).
+Requirements: Claude Code and Node.js on `PATH` (for the hooks). The hooks declare `"shell": "powershell"` (Windows
+without Git Bash); on macOS or Linux, remove that field from `plugins/stack/hooks/hooks.json`.
 
 ```
 claude plugin marketplace add D:\Projekty\agent-stack
