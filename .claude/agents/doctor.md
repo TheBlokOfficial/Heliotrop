@@ -25,7 +25,11 @@ The brief names the project paths and the scope: the pending sessions, or given 
 - `-SessionId <id>`: the full table of one session.
 - `-Brief <agent>`, `-Timeline <agent>`, `-Find <regex> [-Agent <agent>]` with `-SessionId`: excerpts.
 
-Columns and known limits: [diagnostics/README.md](../../diagnostics/README.md).
+Columns and known limits: [diagnostics/README.md](../../diagnostics/README.md). Transcripts missing in
+`~/.claude/projects` are read from `~/.claude/stack-archive` (written by the plugin's `Stop` hook).
+Measure with columns before excerpts: main messages (`mainMsgs*`), overlap (`maxConcurrent`, `concurrentMin2`,
+`mainWaitMin`, `startedAt`/`endedAt`), first edit (`firstEditK`, `wKBeforeEdit`), tests (`testCalls`, `testWK`,
+`testRunsRed`) and fix agents (`role`); rows recorded before these existed have them empty.
 
 ## Procedure
 
@@ -33,8 +37,9 @@ Columns and known limits: [diagnostics/README.md](../../diagnostics/README.md).
    session report for that session can be identified (its `docs/sessions/` report of that date and topic); otherwise
    leave them empty.
 2. Choose suspects across the whole batch, up to 8: the highest `weightedK`, peak over 150k, status `partial`,
-   `blocked` or `none`, many searches before the first edit, `bigReads` above 0, sessions with `fixCommits`. Prefer
-   cases that share a pattern over isolated extremes.
+   `blocked` or `none`, many searches before the first edit, high `firstEditK` or `wKBeforeEdit`, high `testWK` or
+   `testRunsRed`, `bigReads` above 0, sessions with `fixCommits`, agents with `role` `fix`. Prefer cases that share a
+   pattern over isolated extremes.
 3. Examine each suspect with the excerpt modes and find the cause of its cost. Compare its brief with the engine's
    brief format and rules (`plugins/stack/core/orchestrator.md`, `plugins/stack/skills/protocol/SKILL.md`, the agent's
    definition in `plugins/stack/agents/`). Classify the cause as one of: brief (missing paths or ranges, goal too

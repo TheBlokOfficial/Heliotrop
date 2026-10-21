@@ -7,6 +7,9 @@
 #   [-SessionId <uuid or prefix>]       report for one session; default: the newest session of the project
 #   -Pending [-Since <date>] [-Record]  report for every finished session not yet in sessions.csv; -Record appends it
 #
+# A transcript missing in ~\.claude\projects\<project> is read from ~\.claude\stack-archive\<project> (copies written by
+# the plugin's Stop hook); the original wins when both exist.
+#
 # Excerpt mode for one session (bounded by -MaxChars):
 #   -Brief <agent>              full first prompt of one agent ('main' or a prefix of the id from the metrics table)
 #   -Find <regex> [-Agent <a>]  matches with surrounding text in prompts, messages, tool inputs and results
@@ -37,10 +40,44 @@ $projectName = Split-Path $Project -Leaf
 $transcriptDir = Join-Path "$env:USERPROFILE\.claude\projects" ($Project -replace '[^A-Za-z0-9]', '-')
 $sessionsCsv = Join-Path $DataDir 'sessions.csv'
 $agentsCsv = Join-Path $DataDir 'agents.csv'
+# Copies of the transcripts written by the plugin's Stop hook; used for what is missing in $transcriptDir.
+$archiveDir = Join-Path "$env:USERPROFILE\.claude\stack-archive" (Split-Path $transcriptDir -Leaf)
+
+# Main transcripts of the project, from the archive and the original folder; the original wins when both exist.
+function Get-MainTranscripts {
+    $all = @{}
+    foreach ($d in $archiveDir, $transcriptDir) {
+        Get-ChildItem $d -File -Filter *.jsonl -ErrorAction SilentlyContinue | ForEach-Object { $all[$_.BaseName] = $_ }
+    }
+    return @($all.Values)
+}
 
 function Get-SessionFiles($id) {
-    $main = Join-Path $transcriptDir "$id.jsonl"
-    return @($main) + @(Get-ChildItem (Join-Path $transcriptDir "$id\subagents") -Filter *.jsonl -ErrorAction SilentlyContinue | ForEach-Object FullName)
+    $main = @($transcriptDir, $archiveDir | ForEach-Object { Join-Path $_ "$id.jsonl" } | Where-Object { Test-Path $_ })[0]
+    $subs = @{}
+    foreach ($d in $archiveDir, $transcriptDir) {
+        Get-ChildItem (Join-Path $d "$id\subagents") -Filter *.jsonl -ErrorAction SilentlyContinue | ForEach-Object { $subs[$_.Name] = $_.FullName }
+    }
+    return @($main) + @($subs.Values | Sort-Object { Split-Path $_ -Leaf })
+}
+
+# Appends rows to a CSV file. When the rows have columns the file lacks, the old rows are kept as they are and get
+# empty values for the new columns (which must come last).
+function Add-CsvRows($path, $rows) {
+    $rows = @($rows)
+    if (-not $rows) { return }
+    $old = @()
+    if (Test-Path $path) { $old = @(Import-Csv $path) }
+    if ($old.Count -gt 0) {
+        $have = @($old[0].PSObject.Properties.Name)
+        $missing = @($rows[0].PSObject.Properties.Name | Where-Object { $_ -notin $have })
+        if ($missing.Count -gt 0) {
+            foreach ($o in $old) { foreach ($m in $missing) { $o | Add-Member -NotePropertyName $m -NotePropertyValue '' } }
+            @($old) + $rows | Export-Csv $path -NoTypeInformation -Encoding UTF8
+            return
+        }
+    }
+    $rows | Export-Csv $path -Append -NoTypeInformation -Encoding UTF8
 }
 
 function Get-TextLength($content) {
@@ -71,8 +108,8 @@ function Get-AgentMeta($file) {
 # --- Excerpt modes -------------------------------------------------------------------------------------------------
 
 if ($Brief -or $Find -or $Timeline) {
-    if (-not $SessionId) { $SessionId = (Get-ChildItem $transcriptDir -File -Filter *.jsonl | Sort-Object LastWriteTime -Descending | Select-Object -First 1).BaseName }
-    $SessionId = (Get-ChildItem $transcriptDir -File -Filter "$SessionId*.jsonl" | Select-Object -First 1).BaseName
+    if (-not $SessionId) { $SessionId = (Get-MainTranscripts | Sort-Object LastWriteTime -Descending | Select-Object -First 1).BaseName }
+    $SessionId = (Get-MainTranscripts | Where-Object { $_.Name -like "$SessionId*" } | Select-Object -First 1).BaseName
     $files = Get-SessionFiles $SessionId
 }
 
@@ -188,15 +225,32 @@ function Get-GitStats($first, $last) {
 
 $pathPattern = '(?:[\w.-]+[/\\])+[\w.-]+'
 $rangePattern = '(?:[\w.-]+[/\\])*[\w.-]+\.\w+(?::\d+(?:-\d+)?|#\w+)'
+# Tests: files under tests/ or named *_test.* / *.test.*, and shell commands that run a test suite.
+$testPathPattern = '(?i)(^|[\\/])tests[\\/]|_test\.[^\\/]*$|\.test\.[^\\/]*$'
+$testCmdPattern = '(?i)\bctest\b|_tests\.exe\b|\bnpm\s+(run\s+)?test\b|\bpytest\b|-m\s+(pytest|unittest)\b|\b(dotnet|go|cargo)\s+test\b|\b(jest|vitest|mocha)\b|\bnode\s+--test\b'
+$testOutPattern = 'All tests passed|test cases:|\d+% tests passed|tests failed out of|assertions:|\d+ tests? passed'
+$testRedPattern = 'The following tests FAILED|\*\*\*Failed|\[\s*FAILED\s*\]|(?<![\w-])[1-9]\d* failed\b|Tests:\s+\d+ failed|FAILED\s+\S+::|\b[1-9]\d* tests? failed'
+$nonTestCmd = '^\s*(git|Get-Content|cat|Select-String|rg|grep)\b'
+# Brief of an agent that fixes review findings.
+$fixPattern = '(?i)finding|review fix|fixes from review|poprawk'
+
+function Get-Median($values) {
+    $s = @($values | Sort-Object)
+    if ($s.Count -eq 0) { return 0 }
+    if ($s.Count % 2) { return $s[($s.Count - 1) / 2] }
+    return ($s[$s.Count / 2 - 1] + $s[$s.Count / 2]) / 2
+}
 
 function Measure-Transcript($file) {
-    $seen = @{}; $toolCounts = @{}; $fullReads = @{}; $toolNames = @{}
-    $inTok = 0; $cacheWrite = 0; $cacheRead = 0; $outTok = 0; $calls = 0; $peak = 0
+    $seen = @{}; $toolCounts = @{}; $fullReads = @{}; $toolNames = @{}; $callRecs = @{}; $toolRecs = @{}
+    $inTok = 0; $cacheWrite = 0; $cacheRead = 0; $outTok = 0; $calls = 0; $peak = 0; $runCost = 0.0
     $first = $null; $last = $null; $model = ''; $brief = $null; $status = ''; $injected = $false
-    $searches = 0; $searchesBeforeEdit = 0; $edited = $false; $bigReads = 0; $big = @()
+    $searches = 0; $searchesBeforeEdit = 0; $edited = $false; $bigReads = 0; $big = @(); $firstEdit = $null
     $name = Get-AgentName $file
+    $entries = New-Object System.Collections.ArrayList
     foreach ($line in [IO.File]::ReadLines($file)) {
         $e = $line | ConvertFrom-Json
+        $t = $null
         if ($e.timestamp) {
             $t = [datetime]$e.timestamp
             if (-not $first) { $first = $t }
@@ -204,23 +258,17 @@ function Measure-Transcript($file) {
         }
         if ($e.type -eq 'attachment' -and $e.attachment.type -eq 'hook_additional_context' -and
             (@($e.attachment.content) -join "`n") -like '*# stack: orchestrator rules*') { $injected = $true }
-        if ($e.type -eq 'user' -and $null -eq $brief -and
-            ($e.message.content -is [string] -or -not @($e.message.content | Where-Object { $_.type -eq 'tool_result' }))) {
-            $brief = Get-Text $e.message.content
+        if ($e.type -eq 'user') {
+            $hasResult = $e.message.content -isnot [string] -and @($e.message.content | Where-Object { $_.type -eq 'tool_result' }).Count -gt 0
+            if ($null -eq $brief -and -not $hasResult) { $brief = Get-Text $e.message.content }
+            if ($name -eq 'main' -and $t) {
+                # A real prompt is one the user typed, not a tool result, notification or injected reminder.
+                $real = $false
+                if (-not $hasResult -and -not $e.isMeta) { $real = (Get-Text $e.message.content) -notmatch '^\s*<(task-notification|system-reminder|command-|local-command)' }
+                [void]$entries.Add([pscustomobject]@{ Ts = $t; Kind = 'user'; Real = $real })
+            }
         }
         if ($e.type -eq 'assistant') {
-            foreach ($c in $e.message.content) {
-                if ($c.type -eq 'tool_use') {
-                    $toolNames[$c.id] = $c.name
-                    $toolCounts[$c.name] = 1 + [int]$toolCounts[$c.name]
-                    if ($c.name -in 'Grep', 'Glob') { $searches++; if (-not $edited) { $searchesBeforeEdit++ } }
-                    if ($c.name -in 'Edit', 'Write', 'NotebookEdit') { $edited = $true }
-                    if ($c.name -eq 'Read' -and -not $c.input.limit -and $c.input.file_path -notlike '*\.claude\project.md') { $fullReads[$c.id] = $true }
-                    # A subagent may deliver its return through a handback tool instead of a final text message.
-                    if ($c.input.message -is [string] -and $c.input.message -match 'Status:\s*\**\s*(done|partial|blocked)') { $status = $Matches[1] }
-                }
-                if ($c.type -eq 'text' -and $c.text -match 'Status:\s*\**\s*(done|partial|blocked)') { $status = $Matches[1] }
-            }
             # One API response is split into several lines (one per content block) that repeat the same usage.
             $id = $e.message.id
             # Synthetic messages (interruptions, errors) are written by Claude Code, not returned by the API.
@@ -232,6 +280,36 @@ function Measure-Transcript($file) {
                 $cacheRead += [long]$u.cache_read_input_tokens; $outTok += [long]$u.output_tokens
                 $ctx = [long]$u.input_tokens + [long]$u.cache_creation_input_tokens + [long]$u.cache_read_input_tokens
                 if ($ctx -gt $peak) { $peak = $ctx }
+                $cost = ([long]$u.input_tokens + 1.25 * [long]$u.cache_creation_input_tokens + 0.1 * [long]$u.cache_read_input_tokens) / 1000
+                $callRecs[$id] = [pscustomobject]@{ Idx = $calls; Ts = $t; CtxK = $ctx / 1000; Cost = $cost; CostBefore = $runCost; Tools = 0; TextLen = 0 }
+                $runCost += $cost
+            }
+            $call = if ($id) { $callRecs[$id] } else { $null }
+            if ($name -eq 'main' -and $t -and $call) { [void]$entries.Add([pscustomobject]@{ Ts = $t; Kind = 'assistant'; Real = $false }) }
+            foreach ($c in $e.message.content) {
+                if ($c.type -eq 'tool_use') {
+                    $toolNames[$c.id] = $c.name
+                    $toolCounts[$c.name] = 1 + [int]$toolCounts[$c.name]
+                    if ($c.name -in 'Grep', 'Glob') { $searches++; if (-not $edited) { $searchesBeforeEdit++ } }
+                    if ($c.name -in 'Edit', 'Write', 'NotebookEdit') { if (-not $edited -and $call) { $firstEdit = $call }; $edited = $true }
+                    if ($c.name -eq 'Read' -and -not $c.input.limit -and $c.input.file_path -notlike '*\.claude\project.md') { $fullReads[$c.id] = $true }
+                    # A subagent may deliver its return through a handback tool instead of a final text message.
+                    if ($c.input.message -is [string] -and $c.input.message -match 'Status:\s*\**\s*(done|partial|blocked)') { $status = $Matches[1] }
+                    if ($call) { $call.Tools++ }
+                    $shell = $c.name -in 'PowerShell', 'Bash'
+                    $cmd = ''; $isTest = $false
+                    if ($shell) {
+                        $cmd = "$($c.input.command)" -replace '\$(cl|env:[A-Za-z_]+)\s*=\s*("[^"]*"|''[^'']*'')\s*;?', ''
+                        $isTest = $cmd -notmatch $nonTestCmd -and $cmd -match $testCmdPattern
+                    } elseif ($c.name -in 'Edit', 'Write', 'NotebookEdit') {
+                        $isTest = "$($c.input.file_path)$($c.input.notebook_path)" -match $testPathPattern
+                    }
+                    $toolRecs[$c.id] = [pscustomobject]@{ Call = $call; Shell = $shell; Cmd = $cmd; Test = $isTest; Run = ($shell -and $isTest); Red = $false }
+                }
+                if ($c.type -eq 'text') {
+                    if ($c.text -match 'Status:\s*\**\s*(done|partial|blocked)') { $status = $Matches[1] }
+                    if ($call -and $c.text.Trim().Length -gt 0) { $call.TextLen += $c.text.Length }
+                }
             }
         }
         if ($e.type -eq 'user' -and $e.message.content -isnot [string]) {
@@ -240,6 +318,12 @@ function Measure-Transcript($file) {
                     $text = Get-Text $c.content
                     if ($fullReads.ContainsKey($c.tool_use_id) -and ($text -split "`n").Count -gt 200) { $bigReads++ }
                     $big += [pscustomobject]@{ Agent = $name; Tool = $toolNames[$c.tool_use_id]; KChars = [math]::Round($text.Length / 1000, 1) }
+                    $rec = $toolRecs[$c.tool_use_id]
+                    if ($rec -and $rec.Shell) {
+                        # A command that does not look like a test run but prints test results is one.
+                        if (-not $rec.Test -and $rec.Cmd -notmatch $nonTestCmd -and $text -match $testOutPattern) { $rec.Test = $true; $rec.Run = $true }
+                        if ($rec.Run -and $text -match $testRedPattern) { $rec.Red = $true }
+                    }
                 }
             }
         }
@@ -249,9 +333,17 @@ function Measure-Transcript($file) {
     $total = $inTok + $cacheWrite + $cacheRead
     $task = ($brief -replace '\s+', ' ')
     if ($task.Length -gt 70) { $task = $task.Substring(0, 70) + '...' }
+    $type = if ($name -eq 'main') { 'main' } elseif ($meta) { $meta.agentType } else { '' }
+    # Test work: tool calls that write tests or run them; a call's cost is shared among the tools it called.
+    $testCalls = 0; $testWK = 0.0; $testRunsRed = 0
+    foreach ($r in $toolRecs.Values) {
+        if ($r.Test) { $testCalls++; if ($r.Call) { $testWK += $r.Call.Cost / [math]::Max(1, $r.Call.Tools) } }
+        if ($r.Run -and $r.Red) { $testRunsRed++ }
+    }
+    $textMsgs = @($callRecs.Values | Where-Object { $_.TextLen -gt 0 } | Sort-Object Idx | ForEach-Object { [pscustomobject]@{ Ts = $_.Ts; Len = $_.TextLen } })
     return [pscustomobject]@{
         Agent = $name
-        Type = if ($name -eq 'main') { 'main' } elseif ($meta) { $meta.agentType } else { '' }
+        Type = $type
         Model = $model; Calls = $calls; PeakK = [math]::Round($peak / 1000)
         InputK = [math]::Round($total / 1000)
         WeightedK = [math]::Round(($inTok + 1.25 * $cacheWrite + 0.1 * $cacheRead) / 1000)
@@ -265,7 +357,59 @@ function Measure-Transcript($file) {
         Status = if ($name -eq 'main') { '' } elseif ($status) { $status } else { 'none' }
         Tools = ($toolCounts.GetEnumerator() | Sort-Object Value -Descending | ForEach-Object { "$($_.Key) x$($_.Value)" }) -join ' '
         Task = $task
-        First = $first; Last = $last; Injected = $injected; Big = $big
+        StartedAt = if ($first) { $first.ToString('o') } else { '' }
+        EndedAt = if ($last) { $last.ToString('o') } else { '' }
+        FirstEditCall = if ($firstEdit) { $firstEdit.Idx } else { '' }
+        FirstEditK = if ($firstEdit) { [math]::Round($firstEdit.CtxK) } else { '' }
+        WKBeforeEdit = if ($firstEdit) { [math]::Round($firstEdit.CostBefore) } else { '' }
+        TestCalls = $testCalls; TestWK = [math]::Round($testWK, 1); TestRunsRed = $testRunsRed
+        Role = if ($name -ne 'main' -and $type -notmatch 'review|verif|research' -and $brief -match $fixPattern) { 'fix' } else { '' }
+        First = $first; Last = $last; Injected = $injected; Big = $big; TextMsgs = $textMsgs; Entries = $entries
+    }
+}
+
+# Session-level measures of the main session's messages and of how long subagents ran in parallel with it.
+function Measure-Overlap($main, $subs) {
+    $texts = @($main.TextMsgs)
+    $lens = @($texts | ForEach-Object Len)
+    $running = { param($t) @($subs | Where-Object { $_.First -le $t -and $_.Last -ge $t }).Count }
+    $long = 0
+    if ($texts.Count -gt 1) { $long = @($texts[0..($texts.Count - 2)] | Where-Object { $_.Len -gt 500 }).Count }
+    $whileAgents = @($texts | Where-Object { (& $running $_.Ts) -gt 0 }).Count
+
+    # Concurrency: sweep over the starts and ends of the subagents, clipped to the main session's window.
+    $wS = $main.First; $wE = $main.Last
+    $events = @()
+    foreach ($s in $subs) {
+        $events += [pscustomobject]@{ T = [math]::Max(0, ($s.First - $wS).TotalSeconds); D = 1 }
+        $events += [pscustomobject]@{ T = [math]::Min(($wE - $wS).TotalSeconds, ($s.Last - $wS).TotalSeconds); D = -1 }
+    }
+    $level = 0; $prev = 0; $maxLevel = 0; $secs2 = 0.0
+    foreach ($x in @($events | Sort-Object T, D)) {
+        if ($level -ge 2) { $secs2 += $x.T - $prev }
+        $prev = $x.T; $level += $x.D
+        if ($level -gt $maxLevel) { $maxLevel = $level }
+    }
+
+    # Gaps over 60 s between entries of the main session while a subagent ran (a gap that ends with the user's
+    # own prompt is the user's time, not waiting).
+    $wait = 0.0
+    $et = @($main.Entries | Sort-Object Ts)
+    for ($i = 1; $i -lt $et.Count; $i++) {
+        $g = ($et[$i].Ts - $et[$i - 1].Ts).TotalSeconds
+        if ($g -le 60 -or ($et[$i].Kind -eq 'user' -and $et[$i].Real)) { continue }
+        if ((& $running $et[$i - 1].Ts.AddSeconds($g / 2)) -gt 0) { $wait += $g }
+    }
+    return [pscustomobject]@{
+        mainMsgs = $texts.Count
+        mainMsgChars = ($lens | Measure-Object -Sum).Sum
+        mainMsgMedian = [math]::Round((Get-Median $lens), 1)
+        mainMsgMax = ($lens | Measure-Object -Maximum).Maximum
+        mainMsgsLong = $long
+        mainMsgsWhileAgents = $whileAgents
+        maxConcurrent = $maxLevel
+        concurrentMin2 = [math]::Round($secs2 / 60, 1)
+        mainWaitMin = [math]::Round($wait / 60, 1)
     }
 }
 
@@ -274,6 +418,7 @@ function Measure-Session($id) {
     $main = $agents | Where-Object { $_.Agent -eq 'main' }
     $subs = @($agents | Where-Object { $_.Agent -ne 'main' })
     $git = Get-GitStats $main.First $main.Last
+    $overlap = Measure-Overlap $main $subs
     $session = [pscustomobject]@{
         project = $projectName; session = $id; date = $main.First.ToString('yyyy-MM-dd')
         engine = Get-EngineVersion $main.First $main.Injected; kind = ''; itemsDone = ''
@@ -287,6 +432,10 @@ function Measure-Session($id) {
         agentsNoStatus = @($subs | Where-Object { $_.Status -eq 'none' }).Count
         bigReads = ($agents | Measure-Object BigReads -Sum).Sum
         commits = $git.Commits; fixCommits = $git.FixCommits; linesChanged = $git.LinesChanged
+        mainMsgs = $overlap.mainMsgs; mainMsgChars = $overlap.mainMsgChars; mainMsgMedian = $overlap.mainMsgMedian
+        mainMsgMax = $overlap.mainMsgMax; mainMsgsLong = $overlap.mainMsgsLong
+        mainMsgsWhileAgents = $overlap.mainMsgsWhileAgents; maxConcurrent = $overlap.maxConcurrent
+        concurrentMin2 = $overlap.concurrentMin2; mainWaitMin = $overlap.mainWaitMin
     }
     $rows = $agents | ForEach-Object {
         [pscustomobject]@{
@@ -295,6 +444,9 @@ function Measure-Session($id) {
             briefChars = $_.BriefChars; briefPaths = $_.BriefPaths; briefRanges = $_.BriefRanges
             searchesBeforeEdit = $_.SearchesBeforeEdit; searches = $_.Searches; bigReads = $_.BigReads
             status = $_.Status; tools = $_.Tools
+            startedAt = $_.StartedAt; endedAt = $_.EndedAt; firstEditCall = $_.FirstEditCall; firstEditK = $_.FirstEditK
+            wKBeforeEdit = $_.WKBeforeEdit; testCalls = $_.TestCalls; testWK = $_.TestWK; testRunsRed = $_.TestRunsRed
+            role = $_.Role
         }
     }
     return [pscustomobject]@{ Session = $session; Agents = $agents; Rows = @($rows) }
@@ -318,13 +470,32 @@ function Format-SessionTable($sessions) {
     }
 }
 
-$legend = 'PeakK = largest single-call context. InputK = all input tokens over all calls (incl. cache reads). WeightedK = input weighted by price: cache reads 0.1x, cache writes 1.25x. Brief paths = distinct paths in the first prompt; ranges = path:line or path#symbol. Big reads = whole-file Reads over 200 lines (the contract excluded).'
+function Format-OverlapTable($sessions) {
+    '| Session | Main msgs (long, while agents) | Msg chars / median / max | Max concurrent | Min with 2+ agents | Main wait min |'
+    '|---|---|---|---|---|---|'
+    foreach ($s in $sessions) {
+        "| $($s.session.Substring(0, 8)) | $($s.mainMsgs) ($($s.mainMsgsLong), $($s.mainMsgsWhileAgents)) | $($s.mainMsgChars) / $($s.mainMsgMedian) / $($s.mainMsgMax) | $($s.maxConcurrent) | $($s.concurrentMin2) | $($s.mainWaitMin) |"
+    }
+}
+
+function Format-EditTestTable($agents, [switch]$WithSession) {
+    $sessionCol = if ($WithSession) { '| Session ' } else { '' }
+    "$sessionCol| Agent | Type | Role | Started | First edit call / ctxK / wK before | Test calls / wK / red runs |"
+    "$(if ($WithSession) { '|---' })|---|---|---|---|---|---|"
+    foreach ($a in $agents) {
+        $s = if ($WithSession) { "| $($a.SessionShort) " } else { '' }
+        $edit = if ($a.FirstEditCall -ne '') { "$($a.FirstEditCall) / $($a.FirstEditK) / $($a.WKBeforeEdit)" } else { 'no edit' }
+        "$s| $($a.Agent) | $($a.Type) | $($a.Role) | $($a.StartedAt.Substring(11, 8)) | $edit | $($a.TestCalls) / $($a.TestWK) / $($a.TestRunsRed) |"
+    }
+}
+
+$legend = 'PeakK = largest single-call context. InputK = all input tokens over all calls (incl. cache reads). WeightedK = input weighted by price: cache reads 0.1x, cache writes 1.25x. Brief paths = distinct paths in the first prompt; ranges = path:line or path#symbol. Big reads = whole-file Reads over 200 lines (the contract excluded). Main msgs = text messages of the main session (long = over 500 chars, final message excluded; while agents = sent while a subagent ran). Wait = main session gaps over 60 s while a subagent ran. Test calls = Edit/Write on test paths and commands that run tests; red runs = test runs whose output shows failures.'
 
 if ($Pending) {
     $recorded = @()
     if (Test-Path $sessionsCsv) { $recorded = @(Import-Csv $sessionsCsv | Where-Object { $_.project -eq $projectName } | ForEach-Object session) }
     $cutoff = (Get-Date).AddMinutes(-$MinIdleMinutes)
-    $ids = @(Get-ChildItem $transcriptDir -File -Filter *.jsonl | Where-Object { $_.LastWriteTime -ge $Since -and $_.LastWriteTime -lt $cutoff } |
+    $ids = @(Get-MainTranscripts | Where-Object { $_.LastWriteTime -ge $Since -and $_.LastWriteTime -lt $cutoff } |
         Sort-Object LastWriteTime | ForEach-Object BaseName |
         Where-Object { $id = $_; -not ($recorded | Where-Object { $id.StartsWith($_) }) })
     if (-not $ids) { "No pending sessions for $projectName."; return }
@@ -340,6 +511,14 @@ if ($Pending) {
     ''
     Format-AgentTable ($allAgents | Sort-Object WeightedK -Descending | Select-Object -First $Top) -WithSession
     ''
+    '## Main messages and overlap'
+    ''
+    Format-OverlapTable ($results | ForEach-Object Session)
+    ''
+    "## First edit and tests (the same agents)"
+    ''
+    Format-EditTestTable ($allAgents | Sort-Object WeightedK -Descending | Select-Object -First $Top) -WithSession
+    ''
     "## Largest tool results (top $Top)"
     ''
     '| Session | Agent | Tool | K chars |'
@@ -348,16 +527,16 @@ if ($Pending) {
         Sort-Object KChars -Descending | Select-Object -First $Top | ForEach-Object { "| $($_.SessionShort) | $($_.Agent) | $($_.Tool) | $($_.KChars) |" }
     if ($Record) {
         New-Item -ItemType Directory -Force $DataDir | Out-Null
-        $results | ForEach-Object Session | Export-Csv $sessionsCsv -Append -NoTypeInformation -Encoding UTF8
-        $results | ForEach-Object { $_.Rows } | Export-Csv $agentsCsv -Append -NoTypeInformation -Encoding UTF8
+        Add-CsvRows $sessionsCsv ($results | ForEach-Object Session)
+        Add-CsvRows $agentsCsv ($results | ForEach-Object { $_.Rows })
         ''
         "Recorded $($ids.Count) sessions in $sessionsCsv and their agents in $agentsCsv."
     }
     return
 }
 
-if (-not $SessionId) { $SessionId = (Get-ChildItem $transcriptDir -File -Filter *.jsonl | Sort-Object LastWriteTime -Descending | Select-Object -First 1).BaseName }
-$SessionId = (Get-ChildItem $transcriptDir -File -Filter "$SessionId*.jsonl" | Select-Object -First 1).BaseName
+if (-not $SessionId) { $SessionId = (Get-MainTranscripts | Sort-Object LastWriteTime -Descending | Select-Object -First 1).BaseName }
+$SessionId = (Get-MainTranscripts | Where-Object { $_.Name -like "$SessionId*" } | Select-Object -First 1).BaseName
 $result = Measure-Session $SessionId
 "# Session metrics: $projectName $SessionId"
 ''
@@ -366,6 +545,14 @@ $legend
 Format-SessionTable @($result.Session)
 ''
 Format-AgentTable $result.Agents
+''
+'## Main messages and overlap'
+''
+Format-OverlapTable @($result.Session)
+''
+'## First edit and tests'
+''
+Format-EditTestTable $result.Agents
 ''
 "## Largest tool results (top $Top)"
 ''
