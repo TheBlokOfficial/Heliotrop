@@ -22,9 +22,11 @@ plugins/stack/
 
 ## Behaviour
 
-- **SessionStart hook.** In a project with `.claude/project.md` it injects `core/orchestrator.md`: session scope,
-  start and end reports, the three communication modes, the decision rule, the brief and return formats, and the
-  slice-size rules. Without a contract it injects one line saying that the workflow is off.
+- **SessionStart hook.** In a project with `.claude/project.md` it injects `core/orchestrator.md`: the orchestrator
+  as the session's manager, session scope, start and end reports, the three communication modes, the decision rule,
+  the brief and return formats, and the slice-size rules. The rules are defaults the orchestrator may deviate from
+  with a reason in the decision log; user decisions and the contract are not. Without a contract it injects one line
+  saying that the workflow is off.
 - **PostToolUse hook (Edit, Write).** Runs the contract's `on-edit:` command with `{file}` replaced by the edited path,
   using PowerShell on Windows and `/bin/sh` elsewhere. A failure is reported back to Claude. No `on-edit:` line, or
   `none`, means nothing runs. The full `check` is run by the verifier, not after every edit.
