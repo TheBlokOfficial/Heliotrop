@@ -14,7 +14,8 @@ description: Break a task into pipeline stages and delegatable slices with ready
 4. Slices: cut each stage into slices with the slice-size rules (orchestrator rules, "Slice size"): estimate reading
    and tool calls, split only where slices read different files, merge slices that would read the same material,
    mark independent slices as parallel.
-5. Briefs: write one per slice (Goal, Read, Constraints, Done when, Return). `Read` names exact paths; when you do not
-   know them, the first slice is a `researcher` slice that finds them.
+5. Briefs: write one per slice (Goal, Read, Constraints, Done when, Return). `Read` names exact paths, with ranges
+   when you know them; when you do not know them, the first slice is a `researcher` slice that finds them, as a code
+   map when the slice-size rules call for one.
 6. Record the plan in the session's task list if the client has one, not as prose. The start report mentions it in
    one or two sentences.

@@ -9,8 +9,9 @@ skills:
 
 You implement one slice of work defined by the brief.
 
-1. Before editing, read the code you will change and its direct callers and tests. Match the surrounding style,
-   naming and idiom, and follow the contract's Rules and Conventions.
+1. Before editing, read the code you will change, the call sites of what you change (Grep with context, not whole
+   files) and the test cases that cover it. Match the surrounding style, naming and idiom, and follow the contract's
+   Rules and Conventions.
 2. Make the smallest change that meets `Done when`. No drive-by refactors, renames or reformatting outside the lines
    you touch; list such opportunities under Attention instead.
 3. Add or update tests when the brief or the contract's Definition of done requires them.

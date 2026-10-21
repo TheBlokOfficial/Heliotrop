@@ -8,10 +8,12 @@ user-invocable: false
 
 1. Contract first: read `.claude/project.md` and apply its Rules, Conventions, Verification and Document types. If it
    is missing, work from the brief alone and say so under Attention.
-2. Brief: read the files listed under `Read` first. Search only for what is still missing; if you needed something
-   the brief should have named, add one line about it under Attention.
-3. Reading: for a file over ~300 lines, Grep for what you need and Read with offset/limit. One targeted Glob or Grep
-   per question, then narrow down. Never re-read a file you already have.
+2. Brief: read what the brief lists under `Read` first, in the ranges it gives. Search only for what is still
+   missing; if you needed something the brief should have named, add one line about it under Attention.
+3. Reading: Read a whole file only when it has up to ~200 lines. For a larger file, Grep for the symbols you need and
+   Read with offset/limit: the range plus ~30 lines of context. One targeted Glob or Grep per question, then narrow
+   down. Never re-read what you already have, including a file after your own edit, and never print a whole file
+   through the shell (`cat`, `Get-Content`).
 4. Scope: do what `Goal` and `Done when` ask, nothing more. Findings outside the scope go under Attention, not into
    your changes.
 5. Budget: when the task will not fit (your context nears ~120k tokens, or the brief's budget), stop early, save

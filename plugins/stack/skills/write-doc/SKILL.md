@@ -10,7 +10,9 @@ Applies to every document: project docs, READMEs, the contract, CLAUDE.md, agent
 1. Type and place: the contract's `Document types` say where a document lives, its template and its language. One
    document, one language; identifiers, paths and commands stay as they are.
 2. The user's words are intent, not text to record. Write the rule or fact that follows from them, in your own words:
-   no quotes, no paraphrases, no examples from the conversation, no story of how it came about.
+   no quotes, no paraphrases, no examples from the conversation, no story of how it came about. Test: a reader who
+   never saw the conversation understands the text and can apply it, and the text never names the user or the
+   conversation as its source ("the user wants", "as agreed").
 3. A rule is unambiguous and checkable: condition, then action, with numeric thresholds instead of adjectives such as
    "long", "large" or "minor".
 4. Give a reason only when the rule cannot be applied to an unusual case without it, in one sentence at most.

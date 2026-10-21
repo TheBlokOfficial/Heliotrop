@@ -35,14 +35,20 @@ End: when the slice is done or the user ends the session, run the `end` skill.
 Three modes:
 
 1. Reports: start and end, as above.
-2. While working: no running commentary. One or two sentences when you change direction, settle a decision the user
-   would want to know about, or when a stretch of work (a long-running agent, several minutes without output) would
-   otherwise leave the user without a sign of progress.
+2. While working: no running commentary; the task list and the tool summaries already show progress. Write one or
+   two sentences only when you change direction (replace the plan, drop an approach, react to an unexpected finding)
+   or take a decision or action that changes the result, scope or plan and that the task list and tool summaries do
+   not show. Moving to the next step of the plan, delegating as planned and a return that matches expectations are
+   not reasons to write.
 3. The user interjects mid-work: answer like a messenger chat. Short messages, no reports, no essays.
 
 - Results, conclusions and questions are always in the message text; a poll or buttons never replace them.
 - Link files instead of pasting their content. Analyses and comparisons go into documents, not into the chat.
-- The user's messages may be dictated, with transcription errors: read them for intent.
+- Interpreting the user is your job, not the user's. Their messages may be dictated, with transcription errors, and
+  are not worded for the record: read them for intent and turn them into precise requirements in your own words
+  before they go into a brief, a document, the session file or a commit. Quote the user only when the exact wording
+  is itself the requirement (a name, a text shown to end users), marked as a quote. When the interpretation is
+  uncertain and the result depends on it, ask (see Decisions).
 - Language: the contract's `Language` section; otherwise the user's language.
 
 ## Decisions
@@ -71,15 +77,15 @@ model) or add project agents.
 
 ```
 Goal: what and why, 1-3 sentences
-Read: the exact files or sections the task needs (everything you know of)
+Read: the exact files the task needs (everything you know of), as path:start-end or path#symbol when you know the part
 Constraints: limits, rules, what not to touch, decisions already made, reading budget
 Done when: checkable criteria
 Return: format and size (default: the protocol format below)
 ```
 
 - Name the files you know; the subagent must not hunt for context you already have.
-- Paste only what exists solely in your context (the user's words, decisions). Point to anything the subagent can
-  read itself.
+- Paste only what exists solely in your context (requirements you derived from the user's messages, decisions).
+  Point to anything the subagent can read itself.
 - A review brief never asks for a number of findings; "no findings" is a valid result.
 
 ### Return: subagent to orchestrator
@@ -112,6 +118,13 @@ quadratic in its length (caching softens this, it does not remove it), and long 
 5. Slices with disjoint files and no dependency on each other's results run in parallel. Never let two writing
    agents touch the same files. Worktree isolation starts from the default branch; agents that need the current
    branch's code work in the main checkout, each committing only its own paths.
+6. Code map before a large implementation: when the implementer would have to locate the code itself and locating it
+   means reading more than ~30k tokens or searching more than ~5 files, run a `researcher` slice that writes a code
+   map, then an `implementer` slice that works from it. Below that, or when you know the files, skip the map. The map
+   is a file at a path the brief names: one line per location, `path:start-end — symbol — role — what changes there`,
+   then footnotes for invariants, risks and other call sites; no code beyond single lines. Pass model `sonnet` when
+   the map needs an understanding of behaviour or invariants, not only locations. The implementer's brief lists the
+   map under `Read`, and the implementer reads only the ranges it names, confirming them with Grep where needed.
 
 ## Integration
 
