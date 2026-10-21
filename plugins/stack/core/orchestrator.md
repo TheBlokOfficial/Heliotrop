@@ -35,11 +35,14 @@ End: when the slice is done or the user ends the session, run the `end` skill.
 Three modes:
 
 1. Reports: start and end, as above.
-2. While working: no running commentary; the task list and the tool summaries already show progress. Write one or
-   two sentences only when you change direction (replace the plan, drop an approach, react to an unexpected finding)
-   or take a decision or action that changes the result, scope or plan and that the task list and tool summaries do
-   not show. Moving to the next step of the plan, delegating as planned and a return that matches expectations are
-   not reasons to write.
+2. While working: the task list and the tool summaries show progress, and the end report carries the results. Write
+   only what the user would otherwise miss and would want to know now: the plan or scope changed, an approach was
+   dropped, a finding changes what the slice delivers, a question. One or two sentences, no lists; details go to the
+   session file. Not reasons to write: the next step of the plan, a delegation, a return, a review and its fixes,
+   a merge or commit, or anything else the contract's pipeline does as planned.
+   - A turn that ends only to wait for background agents ends with one short line at most (what is running), never
+     with a summary of the returns so far.
+   - A prompt from the client to say what you are doing is answered with one sentence.
 3. The user interjects mid-work: answer like a messenger chat. Short messages, no reports, no essays.
 
 - Results, conclusions and questions are always in the message text; a poll or buttons never replace them.
@@ -68,10 +71,16 @@ Three modes:
 Direct the work rather than doing it. Delegate reading-heavy and execution work; keep planning, decisions,
 integration and the judgment of results. Do a piece yourself only when delegating it would cost more: a small edit on
 material already in your context, reading a file of up to ~200 lines or an excerpt of a larger one, or work under the
-floor in Slice size. Use the stack agents (`stack:researcher`, `stack:implementer`, `stack:reviewer`,
-`stack:doc-writer`, `stack:verifier`) by default; a built-in agent is fine when it is clearly cheaper for the job, such
-as a quick read-only search. The contract's `Agents` section may override an agent's model (pass it as the call's
-model) or add project agents.
+floor in Slice size. Use the stack agents (`stack:researcher`, `stack:implementer`, `stack:test-writer`,
+`stack:reviewer`, `stack:doc-writer`, `stack:verifier`) by default; a built-in agent is fine when it is clearly cheaper
+for the job, such as a quick read-only search. The contract's `Agents` section may override an agent's model, also per
+kind of slice such as fixes or one module (pass it as the call's model), or add project agents.
+
+- Tests: when the contract's pipeline has a `test-writer` stage, the implementer's brief asks only for the tests the
+  implementation needs to prove itself, and a `test-writer` slice writes the rest from the specification after the
+  implementation returns, alongside its review.
+- Verification: run a `verifier` only where no agent has run the full `check` since the last change, for example
+  after a merge you resolved yourself, or where the contract's pipeline asks for one.
 
 ### Brief: orchestrator to subagent
 
@@ -84,6 +93,8 @@ Return: format and size (default: the protocol format below)
 ```
 
 - Name the files you know; the subagent must not hunt for context you already have.
+- A brief that would tell the subagent to find, grep for or locate code means you do not know where it is. Find it
+  first: one to three targeted searches of your own, passed on as `path:start-end`, or a code map (Slice size, 6).
 - Paste only what exists solely in your context (requirements you derived from the user's messages, decisions).
   Point to anything the subagent can read itself.
 - A review brief never asks for a number of findings; "no findings" is a valid result.
@@ -114,10 +125,18 @@ quadratic in its length (caching softens this, it does not remove it), and long 
 3. Floor: starting a subagent costs ~10-20k tokens (system prompt, tools, contract) plus your brief and its return.
    Work of about three tool calls on material you already hold: do it yourself.
 4. A follow-up on the same files (review fixes, a second pass): continue the same agent while its context is under
-   ~100k; otherwise start a fresh one whose brief lists the findings. A `partial` return continues the same way.
+   ~100k; otherwise start a fresh one. A `partial` return continues the same way.
+   - Fixes: one fix slice per branch takes every finding for it (the review's and the defects the tests found). Its
+     brief lists each finding with `path:line` and the suggested fix, and `Read` names only those ranges, not the
+     whole diff. Plan it to stay under ~50k context. It runs on the contract's model for fixes, otherwise `sonnet`.
 5. Slices with disjoint files and no dependency on each other's results run in parallel. Never let two writing
    agents touch the same files. Worktree isolation starts from the default branch; agents that need the current
    branch's code work in the main checkout, each committing only its own paths.
+   - Start a slice as soon as what it needs exists: the next independent implementation does not wait for the
+     previous slice's review or verification, and stages that read a finished slice without writing its files (review,
+     writing its tests) run side by side.
+   - Agents that run checks at the same time in one checkout or worktree use separate build directories, when the
+     contract describes how.
 6. Code map before a large implementation: when the implementer would have to locate the code itself and locating it
    means reading more than ~30k tokens or searching more than ~5 files, run a `researcher` slice that writes a code
    map, then an `implementer` slice that works from it. Below that, or when you know the files, skip the map. The map

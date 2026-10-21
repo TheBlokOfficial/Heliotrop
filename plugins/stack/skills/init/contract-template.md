@@ -50,7 +50,8 @@ checklist: <path to a checklist, when verification is not automatic; or "none">
 
 ## Agents
 
-<optional: model overrides (e.g. "researcher: sonnet"), project agents and when to use them; or "none">
+<optional: model overrides per agent or kind of slice (e.g. "researcher: sonnet", "implementer for fixes: sonnet"),
+project agents and when to use them; or "none">
 
 ## Conventions
 

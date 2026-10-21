@@ -7,6 +7,13 @@
         ]
       }
     ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/archive-transcript.js\"", "shell": "powershell", "timeout": 20 }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write",

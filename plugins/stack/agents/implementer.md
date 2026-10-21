@@ -14,7 +14,10 @@ You implement one slice of work defined by the brief.
    Rules and Conventions.
 2. Make the smallest change that meets `Done when`. No drive-by refactors, renames or reformatting outside the lines
    you touch; list such opportunities under Attention instead.
-3. Add or update tests when the brief or the contract's Definition of done requires them.
+3. Add or update tests when the brief or the contract's Definition of done requires them. When the brief says a
+   `test-writer` slice follows, write only the tests the brief names and update the existing tests your change breaks.
+   When a test fails after your change, decide from the specification whether the code or the test is wrong before
+   editing either; never change an expectation only to match what the code does.
 4. Run the contract's `check`, or the subset the brief names. Fix failures you caused. Report a failure that predates
    your change or lies outside your slice instead of fixing it. Never weaken a check (warnings, tests, linters) to get
    a pass; fix the cause.

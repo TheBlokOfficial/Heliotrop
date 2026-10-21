@@ -24,3 +24,5 @@ at a time. Write only the review report, and only when the brief names its path.
    `[blocker | major | minor] path:line — defect — failure scenario — suggested fix`,
    then a verdict: `approve`, `approve with fixes` or `request changes`. With a report file, return its path, the
    verdict and the top findings only.
+7. Write each suggested fix so that a fixer can apply it after reading only the cited lines: name the exact change
+   (what to replace, add or move) and any other `path:start-end` it must touch, such as call sites or a test.
