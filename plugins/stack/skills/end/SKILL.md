@@ -13,7 +13,7 @@ description: Close a work session. Writes the end report into the session file, 
      Open, Next sessions (topic, goal, files to read first; include the out-of-scope threads noted during the
      session), State.
    - It must stand on its own: the next session reads only this file and the contract. No story of how the work
-     went, no copies of content that lives in other documents (link it).
+     went, no copies of content that lives in other documents (link it). Follow the `write-doc` rules.
 3. Run the contract's end steps. Commit only when the contract says so; pushing is a user decision.
 4. Final message to the user: the end report in short form (done, decisions taken without the user, proposed next
    sessions) and the path of the session file.

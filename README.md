@@ -13,6 +13,7 @@ plugins/stack/
   core/orchestrator.md              orchestrator rules, injected at session start
   agents/                           researcher, implementer, reviewer, doc-writer, verifier
   skills/plan, end, init            orchestrator procedures (/stack:plan, /stack:end, /stack:init)
+  skills/write-doc                  document rules, preloaded into doc-writer, loaded by the orchestrator
   skills/protocol                   subagent protocol, preloaded into every stack agent
   skills/init/contract-template.md  contract template
   skills/end/report-template.md     session report template
@@ -34,7 +35,7 @@ plugins/stack/
 |---|---|---|---|
 | `stack:researcher` | haiku | Read, Grep, Glob, WebSearch, WebFetch, Write, Edit | search and heavy reading; writes research notes only |
 | `stack:implementer` | sonnet | Read, Edit, Write, Grep, Glob, Bash, PowerShell | one scoped change plus its checks |
-| `stack:reviewer` | opus | Read, Grep, Glob, Bash, PowerShell | read-only review of diffs and designs |
+| `stack:reviewer` | opus | Read, Grep, Glob, Write, Bash, PowerShell | review of diffs and designs; writes only its report |
 | `stack:doc-writer` | sonnet | Read, Write, Edit, Grep, Glob | documents per the contract's types and templates |
 | `stack:verifier` | haiku | Read, Grep, Glob, Bash, PowerShell | runs checks or a checklist, reports the outcome |
 

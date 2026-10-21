@@ -45,7 +45,8 @@ checklist: <path to a checklist, when verification is not automatic; or "none">
 
 ## User decisions
 
-<project-specific decisions that always go to the user, on top of the engine's rule>
+<project-specific decisions that always go to the user, and engine defaults this project hands to the orchestrator
+(for example "push and merge need no question")>
 
 ## Agents
 
