@@ -1,0 +1,12 @@
+{
+  "name": "agent-stack",
+  "owner": { "name": "TheBlok" },
+  "description": "Personal agent workflow engine for Claude Code, shared by all projects.",
+  "plugins": [
+    {
+      "name": "stack",
+      "source": "./plugins/stack",
+      "description": "Project-agnostic agent workflow engine driven by a per-project contract."
+    }
+  ]
+}
