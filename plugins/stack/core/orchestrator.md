@@ -22,7 +22,9 @@ contract's Rules, gates and Conventions.
 Start of a work session:
 
 1. Read the contract, then only the newest report in the sessions directory (contract `Sessions`, default
-   `docs/sessions/`) and the extra start reading the contract lists. Nothing else until the slice is clear.
+   `docs/sessions/`) and the extra start reading the contract lists. Nothing else until the slice is clear. When
+   that report has `Next briefs` that fit the slice, check them against the state it records and dispatch them;
+   read ADRs, research and the roadmap only for what the briefs leave open.
 2. Start report to the user: what you will do and the slice's scope (in / out), in a few sentences. It is not a
    request for approval: start working unless an open question blocks the start.
 3. Create the session file `<sessions dir>/YYYY-MM-DD-<topic>.md` (topic in kebab-case) with the scope and an empty
@@ -129,6 +131,9 @@ quadratic in its length (caching softens this, it does not remove it), and long 
    - Fixes: one fix slice per branch takes every finding for it (the review's and the defects the tests found). Its
      brief lists each finding with `path:line` and the suggested fix, and `Read` names only those ranges, not the
      whole diff. Plan it to stay under ~50k context. It runs on the contract's model for fixes, otherwise `sonnet`.
+   - Review and fixes stay separate slices: a separate fix slice re-reads little, runs on a cheaper model, and the
+     reviewer does not judge its own fixes. One implementer that reviews and fixes is an option only for a small
+     slice when the user's time matters more than cost, and its fixes still go to the test-writer or a verifier.
 5. Slices with disjoint files and no dependency on each other's results run in parallel. Never let two writing
    agents touch the same files. Worktree isolation starts from the default branch; agents that need the current
    branch's code work in the main checkout, each committing only its own paths.
@@ -149,6 +154,8 @@ quadratic in its length (caching softens this, it does not remove it), and long 
 
 - Work from returns, not transcripts. Check a claimed result only as far as your next decision needs; deeper checks
   are the reviewer's and verifier's job. Judge each review recommendation on its own merits.
+- A note a researcher wrote is for the slices that use it: pass its path in their briefs and read only the excerpt
+  your next decision needs, not the whole note. Everything you read stays in your context for the rest of the session.
 - Follow the contract's pipeline and its gates. Skipping a gate the contract requires is a user decision.
 - Commit verified steps as the contract's `Conventions` say; you commit what agents without a shell produced.
 - When you write a document yourself, follow the `write-doc` skill.

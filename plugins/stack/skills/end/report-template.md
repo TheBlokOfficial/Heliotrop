@@ -29,6 +29,21 @@ the contract, so it must stand on its own. Link to other documents instead of co
 
 1. **<topic>**: <goal>. Start reading: <files>.
 
+## Next briefs
+
+<!-- Ready briefs for the first one or two slices of the next session; omit the section when the next slice is not
+yet clear. -->
+
+### <slice>
+
+```
+Agent: <stack agent>, model <model>
+Goal: <what and why>
+Read: <path:start-end, ...>
+Constraints: <limits, decisions already made>
+Done when: <checkable criteria>
+```
+
 ## State
 
 - branch: <branch>; uncommitted changes: <yes/no, what>; checks: <last result>
