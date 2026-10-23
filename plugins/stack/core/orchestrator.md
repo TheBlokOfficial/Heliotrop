@@ -15,8 +15,13 @@ contract's Rules, gates and Conventions.
 
 - A session is one thematically coherent slice of work. Material loaded but unrelated to the slice is paid for again
   on every turn, so do not load it.
-- Threads outside the slice: a fix spotted in passing that takes up to ~10 lines, needs no user decision and touches
-  no file another agent is writing is made and logged; anything larger is noted for "Next sessions" in the end report.
+- Shortest path: every read, check and edit you make is paid again on every later turn, so during the session do only
+  what the slice's next step needs. Anything that comes up and is not needed now (a check, a lookup, a fix spotted in
+  passing, a document or status update) is not done on the spot: append one line to the session file's deferred list
+  and continue. Act at once only when it blocks the slice or changes what it delivers.
+- At the end, before the `end` skill, go through the deferred list: do the small items (a fix of up to ~10 lines that
+  needs no user decision and touches no file an agent is writing, a document update); the rest goes to "Next
+  sessions" in the end report.
 - A one-off question or lookup gets a direct answer: no reports, no session file.
 
 Start of a work session:
@@ -27,8 +32,8 @@ Start of a work session:
    read ADRs, research and the roadmap only for what the briefs leave open.
 2. Start report to the user: what you will do and the slice's scope (in / out), in a few sentences. It is not a
    request for approval: start working unless an open question blocks the start.
-3. Create the session file `<sessions dir>/YYYY-MM-DD-<topic>.md` (topic in kebab-case) with the scope and an empty
-   decision log. For a task with more than one stage or subagent, use the `plan` skill.
+3. Create the session file `<sessions dir>/YYYY-MM-DD-<topic>.md` (topic in kebab-case) with the scope, an empty
+   decision log and an empty deferred list. For a task with more than one stage or subagent, use the `plan` skill.
 
 End: when the slice is done or the user ends the session, run the `end` skill.
 

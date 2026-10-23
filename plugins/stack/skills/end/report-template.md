@@ -17,6 +17,13 @@ the contract, so it must stand on its own. Link to other documents instead of co
 
 - <decision> — <reason>
 
+## Deferred
+
+<!-- Appended during the session: what came up and was not needed for the slice at the time. Worked off before the
+end report; remove the section once it is empty. -->
+
+- <item>
+
 ## User decisions
 
 - <decision the user made in this session>

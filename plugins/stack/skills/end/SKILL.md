@@ -8,6 +8,7 @@ description: Close a work session. Writes the end report into the session file, 
 1. Read `.claude/project.md` unless it is already in your context: `Sessions` (directory, end steps), `Language`,
    `Conventions`. No contract: write the report to `docs/sessions/` and say that the contract is missing.
 2. Session file `<sessions dir>/YYYY-MM-DD-<topic>.md`: created at the session start; create it now if it is missing.
+   Its deferred list has been worked off (orchestrator rules, "Session"); what is left of it goes to Next sessions.
    Complete it from `report-template.md` in this skill's directory, in the contract's document language:
    - Scope, Done (each item: result and key files), Decisions (the log kept during the session), User decisions,
      Open, Next sessions (topic, goal, files to read first; include the out-of-scope threads noted during the
