@@ -27,7 +27,8 @@ type: code | docs | mixed
 
 ## Pipeline
 
-<stages in order, the agent for each stage, and the gates that cannot be skipped>
+<stages in order, the agent for each stage, and the gates that cannot be skipped; when code review and tests run in
+separate review sessions: what an implementation slice still checks and tests, and where the review marker is kept>
 
 ## Verification
 

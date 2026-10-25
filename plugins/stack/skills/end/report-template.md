@@ -47,6 +47,7 @@ yet clear. -->
 Agent: <stack agent>, model <model>
 Goal: <what and why>
 Read: <path:start-end, ...>
+Size: <items, reading ≈ Nk, expected peak ≈ Nk>
 Constraints: <limits, decisions already made>
 Done when: <checkable criteria>
 ```
@@ -54,3 +55,4 @@ Done when: <checkable criteria>
 ## State
 
 - branch: <branch>; uncommitted changes: <yes/no, what>; checks: <last result>
+- unreviewed: <review marker>..<HEAD>, <N> changed lines (only when the contract has review sessions)

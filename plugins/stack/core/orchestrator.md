@@ -86,6 +86,11 @@ kind of slice such as fixes or one module (pass it as the call's model), or add 
 - Tests: when the contract's pipeline has a `test-writer` stage, the implementer's brief asks only for the tests the
   implementation needs to prove itself, and a `test-writer` slice writes the rest from the specification after the
   implementation returns, alongside its review.
+- Review sessions: when the contract's pipeline moves code review and tests out of implementation sessions, an
+  implementation slice ends with the checks and tests the contract names for it and is merged without review. The end
+  report states the unreviewed range, from the contract's review marker to `HEAD`, with its size in changed lines. A
+  review session takes that range: `reviewer` slices split by module or area under the slice ceiling, `test-writer`
+  slices for the tests the contract leaves to it, fix slices as in Slice size, 4, then it moves the marker.
 - Verification: run a `verifier` only where no agent has run the full `check` since the last change, for example
   after a merge you resolved yourself, or where the contract's pipeline asks for one.
 
@@ -94,6 +99,7 @@ kind of slice such as fixes or one module (pass it as the call's model), or add 
 ```
 Goal: what and why, 1-3 sentences
 Read: the exact files the task needs (everything you know of), as path:start-end or path#symbol when you know the part
+Size: items, reading ≈ Nk, expected peak ≈ Nk (Slice size, 1)
 Constraints: limits, rules, what not to touch, decisions already made, reading budget
 Done when: checkable criteria
 Return: format and size (default: the protocol format below)
@@ -123,13 +129,19 @@ review and verification stages confirm it.
 A subagent re-sends its whole history on every turn, so a slice costs about ½ × turns × final context: roughly
 quadratic in its length (caching softens this, it does not remove it), and long contexts also lose quality.
 
-1. Ceiling: a slice must finish well under 200k tokens of context; plan for at most ~120k. Estimate it as the
+1. Ceiling: a slice must finish well under 200k tokens of context; plan for at most ~100k. Estimate it as the
    material to read (tokens ≈ bytes / 4 for code and English, ≈ bytes / 3 for other languages) plus ~3k per expected
-   tool call. Over budget: split, or shrink the reading (an excerpt or a summary instead of whole files).
+   tool call, and write it into the brief's `Size` line. Over budget: split, or shrink the reading (an excerpt or a
+   summary instead of whole files).
+   - One slice, one item: one area of questions for a `researcher` (at most ~3 questions answered from the same
+     sources), one feature or change for an `implementer`, one document for a `doc-writer`, one area for a
+     `reviewer`. Each further item brings its own reading and tool calls, so bundle items only when they read the same
+     files and the estimate stays under the ceiling; otherwise they are separate slices, in parallel when independent.
 2. Split where slices read different files. With S = material both parts would read and A, B = material only one
    part reads, one slice costs ~(S+A+B)², two slices cost ~(S+A)² + (S+B)², so splitting wins when S² < 2·A·B.
    Rule: split when the shared material is smaller than what each part reads on its own; otherwise keep one slice.
-3. Floor: starting a subagent costs ~10-20k tokens (system prompt, tools, contract) plus your brief and its return.
+   When in doubt, split: a fresh agent starts at only ~10-15k context, far less than one slice's growth past ~100k.
+3. Floor: starting a subagent costs ~10-15k tokens (system prompt, tools, contract) plus your brief and its return.
    Work of about three tool calls on material you already hold: do it yourself.
 4. A follow-up on the same files (review fixes, a second pass): continue the same agent while its context is under
    ~100k; otherwise start a fresh one. A `partial` return continues the same way.
