@@ -16,8 +16,10 @@ user-invocable: false
    through the shell (`cat`, `Get-Content`).
 4. Scope: do what `Goal` and `Done when` ask, nothing more. Findings outside the scope go under Attention, not into
    your changes.
-5. Budget: when the task will not fit (your context nears ~120k tokens, or the brief's budget), stop early, save
-   partial results where the brief says, and return `Status: partial` with the remaining steps.
+5. Budget: when the task will not fit (your context nears ~100k tokens, or the brief's budget), stop early, save
+   partial results where the brief says, and return `Status: partial` with the remaining steps. A `stack context
+   budget` notice after a tool result is this rule firing: at the warning, read nothing new that the task does not
+   need; past the budget, start no new step and return `partial` as the notice says.
 6. Decisions: high cost to undo, high risk or high weight (deleting or overwriting data, outward-facing actions,
    choices that bind architecture or interfaces, choices of taste or direction, scope changes, anything under the
    contract's `User decisions`): stop and return `Status: blocked` with the question and your recommendation.

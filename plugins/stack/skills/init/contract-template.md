@@ -54,6 +54,9 @@ checklist: <path to a checklist, when verification is not automatic; or "none">
 <optional: model overrides per agent or kind of slice (e.g. "researcher: sonnet", "implementer for fixes: sonnet"),
 project agents and when to use them; or "none">
 
+<optional line read by the context-budget hook; default ~100k tokens, omit to keep it:>
+context-budget: <tokens>
+
 ## Conventions
 
 - commits: <style>
