@@ -99,14 +99,23 @@ function run(input) {
   } catch (e) { /* a repeated notice is harmless */ }
 
   const k = (n) => `${Math.round(n / 1000)}k`;
+  // Level 1 lets a slice whose work is done run its build, tests and commit: cut there, a fresh agent pays more to
+  // orient than the few calls left. From level 2 on there is no such exemption.
+  const wrapUp = 'start no new step; finish or cleanly undo the edit in progress; save or commit what is done as the ' +
+    'brief and contract allow (mark unverified work as such); then return `Status: partial` listing the remaining ' +
+    'steps, so the orchestrator can hand them to a fresh agent.';
   const text = level === 0
-    ? `stack context budget: your context is ~${k(tokens)} tokens of the ~${k(budget)} slice budget. Plan to finish ` +
-      'within it: no new exploratory reading; if the remaining work will not fit, finish the current step and return ' +
-      '`Status: partial` (protocol, Budget).'
-    : `stack context budget: your context is ~${k(tokens)} tokens, past the ~${k(budget)} slice budget. Wrap up now: ` +
-      'start no new step; finish or cleanly undo the edit in progress; save or commit what is done as the brief and ' +
-      'contract allow (mark unverified work as such); then return `Status: partial` listing the remaining steps, so ' +
-      'the orchestrator can hand them to a fresh agent.';
+    ? `stack context budget: your context is ~${k(tokens)} tokens of the ~${k(budget)} slice budget. Estimate the ` +
+      'tool calls your remaining steps need. More than ~6 beyond the step in progress: finish that step, save or ' +
+      'commit it as the brief and contract allow, and return `Status: partial` with the remaining steps now. ' +
+      'Otherwise finish within the budget. Either way, read nothing for steps you will not finish here ' +
+      '(protocol, Budget).'
+    : level === 1
+      ? `stack context budget: your context is ~${k(tokens)} tokens, past the ~${k(budget)} slice budget. If only ` +
+        'the build, tests and commit of finished work remain, run them and return as usual; if they fail, do not ' +
+        `start fixing: return \`Status: partial\` with the failure. Otherwise wrap up now: ${wrapUp}`
+      : `stack context budget: your context is ~${k(tokens)} tokens, far past the ~${k(budget)} slice budget. Stop ` +
+        `now: ${wrapUp}`;
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: text } }));
 }
 

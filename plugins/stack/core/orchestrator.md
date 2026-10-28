@@ -129,10 +129,11 @@ review and verification stages confirm it.
 A subagent re-sends its whole history on every turn, so a slice costs about ½ × turns × final context: roughly
 quadratic in its length (caching softens this, it does not remove it), and long contexts also lose quality.
 
-1. Ceiling: a slice must finish well under 200k tokens of context; plan for at most ~100k. Estimate it as the
-   material to read (tokens ≈ bytes / 4 for code and English, ≈ bytes / 3 for other languages) plus ~3k per expected
-   tool call, and write it into the brief's `Size` line. Over budget: split, or shrink the reading (an excerpt or a
-   summary instead of whole files).
+1. Ceiling: a slice must finish well under 200k tokens of context; plan for at most ~100k. Estimate it as twice the
+   material the brief names to read (agents read about as much again to orient: searches, neighbouring code, test
+   tables; tokens ≈ bytes / 4 for code and English, ≈ bytes / 3 for other languages) plus ~3k per expected tool call,
+   and write it into the brief's `Size` line. Keep the expected peak at ~80k, where the budget hook warns: estimates
+   of 80k have ended at 100k. Over it: split, or shrink the reading (an excerpt or a summary instead of whole files).
    - One slice, one item: one area of questions for a `researcher` (at most ~3 questions answered from the same
      sources), one feature or change for an `implementer`, one document for a `doc-writer`, one area for a
      `reviewer`. Each further item brings its own reading and tool calls, so bundle items only when they read the same

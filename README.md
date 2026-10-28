@@ -31,8 +31,10 @@ plugins/stack/
   using PowerShell on Windows and `/bin/sh` elsewhere. A failure is reported back to Claude. No `on-edit:` line, or
   `none`, means nothing runs. The full `check` is run by the verifier, not after every edit.
 - **PostToolUse hook (every tool, subagents only).** Reads the subagent's own transcript and tells it its context size
-  next to the tool result: once at 80% of the slice budget (plan to finish), once at the budget (wrap up and return
-  `partial`), then again every further 20%. The budget is ~100k tokens, or the contract's `context-budget: <tokens>`.
+  next to the tool result: once at 80% of the slice budget (estimate what is left; return `partial` now when it is
+  more than ~6 tool calls), once at the budget (wrap up and return `partial`, except that the build, tests and commit
+  of finished work may still run), then again every further 20% (stop now). The budget is ~100k tokens, or the
+  contract's `context-budget: <tokens>`.
   The main thread is never told; nothing runs without a contract.
 - **Stop hook.** In a project with a contract it copies the session's transcripts (main and subagents) to
   `~/.claude/stack-archive/`, so the diagnostics outlive the client deleting them.
