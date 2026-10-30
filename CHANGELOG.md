@@ -3,6 +3,39 @@
 <!-- Changes visible to users of the engine, newest version first. Versions before 1.0.0 (the `stack` plugin, 0.1.0 to
 0.8.0) are described in the git log. -->
 
+## 2.0.0 — 2026-10-30
+
+Design: [docs/design/heliotrop-2.0.md](docs/design/heliotrop-2.0.md). A 1.x contract keeps working as project notes.
+
+### Changed
+
+- Redesign into a short engine: the core (`core/orchestrator.md`) holds four hard rules (main context, subagent
+  budget, what the user decides, no shared files between writing agents) and guidance with reasons instead of
+  procedure. Total engine Markdown is about half of 1.x.
+- Project notes replace the contract: `.claude/project.md` is optional, free-form and short, and `session-start.js`
+  injects it after the core. Without notes the hooks run on defaults and the session suggests `/heliotrop:init`. The
+  optional lines `context-budget:`, `main-context:` and `on-edit:` are still read anywhere in the file.
+- `init` orients and asks instead of auditing: one researcher slice surveys the project, a short conversation covers
+  only what the survey cannot show, then it writes short notes and a pointer line in CLAUDE.md. CLAUDE.md and existing
+  documents are not restructured without approval.
+- `end` and `handover` are simplified; `handover` writes a handover note (`docs/sessions/YYYY-MM-DD-<topic>.md` by
+  default) in place of session files.
+- `write-doc` and `protocol` are shrunk; templates are optional suggestions.
+- Hooks: same thresholds, shorter messages.
+
+### Removed
+
+- Session kinds, triage, the `plan` skill, light mode, slice-size arithmetic and the `Size` field, code maps and
+  review markers as engine concepts.
+- Templates `contract-template.md`, `report-template.md`, `architecture` and `research-note`; the notes template
+  `skills/init/notes-template.md` and the `handover-note` template are new.
+- The 0.x (`stack`) contract migration in `init`.
+
+### Compatibility
+
+- A 1.x contract keeps working as project notes; `init` offers once to rewrite it as notes. Existing documents are
+  never touched by the upgrade.
+
 ## 1.2.1 — 2026-10-30
 
 ### Fixed

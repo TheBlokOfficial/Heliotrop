@@ -1,5 +1,5 @@
 // Stop: keep a copy of the session's transcripts for later analysis, because the desktop app may delete them later.
-// Only in projects with a Heliotrop contract (light mode keeps no archive). Never fails the session: silent, always exit 0.
+// Only in projects with project notes. Never fails the session: silent, always exit 0.
 'use strict';
 const fs = require('fs');
 const os = require('os');

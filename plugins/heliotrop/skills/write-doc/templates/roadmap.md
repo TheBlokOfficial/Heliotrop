@@ -1,14 +1,10 @@
 # Roadmap
 
-<!-- The project's status document and its owner's command center: where the project stands, what is done, what is
-next and what waits for the owner. The only place for status; other documents link here. Written in the contract's
-`user documents:` language (`write-doc` `## Language`); translate the headings. Written for a reader who does not read
-the code or the other documents: plain words, no internal identifiers unless the reader uses them, one line per item,
-details behind a link.
-Updated by `plan` (adds the stages and steps of a plan that spans more than one session), by `end` and `handover`
-(tick finished steps, add open items and Next sessions topics as steps, update Waiting for you, rewrite Where we are)
-and by triage (parks new topics under Later). A finished step is ticked with its date and a link to its session file,
-never deleted. A finished stage collapses to its heading line. -->
+<!-- Optional suggestion for a project that has no status document. The project's status and its owner's command
+center: where the project stands, what is done, what is next and what waits for the owner. The only place for status;
+other documents link here. Language: `write-doc` `## Language`. Written for a reader who does not read the code or the other documents: plain words, no internal
+identifiers unless the reader uses them, one line per item, details behind a link.
+Updated by `end` and `handover` (see `end` step 2). A finished stage collapses to its heading line. -->
 
 ## Where we are
 
@@ -27,7 +23,7 @@ never deleted. A finished stage collapses to its heading line. -->
 <goal of the stage in one sentence>
 
 - [ ] <step>
-- [x] <finished step>, <YYYY-MM-DD>. <link to session file>
+- [x] <finished step>, <YYYY-MM-DD>. <link>
 
 ### ✓ <finished stage>, done <YYYY-MM-DD>. <link>
 

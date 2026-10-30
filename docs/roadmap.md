@@ -1,20 +1,21 @@
 # Roadmapa
 
 <!-- Centrum dowodzenia projektu: stan, co czeka na decyzję, etapy z krokami, pomysły na później, znane problemy.
-Pisana po polsku (kontrakt `user documents:`). Aktualizują ją `plan`, `end` i `handover` według szablonu
-plugins/heliotrop/skills/write-doc/templates/roadmap.md: zrobiony krok jest odhaczany, nie usuwany; zakończony etap
-zwija się do jednej linii. -->
+Pisana po polsku (notatki projektu). Aktualizują ją `end` i `handover` (krok 2 skilla `end`): zrobiony krok jest
+odhaczany, nie usuwany; zakończony etap zwija się do jednej linii. -->
 
 ## Gdzie jesteśmy
 
-Heliotrop 1.2 jest wydany: roadmapa jest centrum dowodzenia w języku użytkownika, silnik subtelnie do niej odsyła,
-a sprawy poboczne niezwiązane z tematem sesji orkiestrator załatwia na jej końcu, gdzie kosztują najmniej. Następny
-krok: przeinstalowanie wtyczki i obserwacja silnika w prawdziwych sesjach.
+Heliotrop 2.0 jest zbudowany i zrecenzowany: krótki rdzeń z czterema twardymi regułami (punkty kontekstu 150k/200k,
+budżet subagenta, decyzje użytkownika, rozłączne pliki agentów piszących) i wskazówkami zamiast procedury. Notatki o
+projekcie (opcjonalne) zastępują kontrakt, a `init` rozpoznaje projekt i pyta tylko o to, czego nie widać. Następny
+krok: przeinstalowanie wtyczki i obserwacja wersji 2.0 w prawdziwych sesjach.
 
 ## Czeka na Ciebie
 
 - Przeinstalowanie wtyczki: odinstalować `stack@agent-stack`, zainstalować `heliotrop@heliotrop`
   ([README](../README.md)). Do tego czasu sesje działają na hookach 0.x.
+- Zatwierdzenie (commit) zmiany 2.0: nie jest jeszcze zatwierdzona.
 
 ## Etapy
 
@@ -24,14 +25,17 @@ krok: przeinstalowanie wtyczki i obserwacja silnika w prawdziwych sesjach.
 
 ### ✓ Heliotrop 1.2: odsyłanie do roadmapy, sprawy poboczne na koniec, gotowe 2026-10-30 ([sesja](sessions/2026-10-30-command-center.md))
 
+### ✓ Heliotrop 2.0: krótki, organiczny silnik, gotowe 2026-10-30 ([notatka projektowa](design/heliotrop-2.0.md))
+
 ### Wdrożenie
 
 Silnik działa w prawdziwych sesjach, a jego zachowanie jest sprawdzone w praktyce.
 
 - [ ] Przeinstalowanie wtyczki (patrz Czeka na Ciebie).
 - [ ] Sprawdzenie, czy żadna inna wtyczka Claude Code nie nazywa się `heliotrop`.
-- [ ] Migracja pierwszego prawdziwego projektu przez `/heliotrop:init` i obserwacja jego pierwszych sesji: punkty
-  kontekstu, komunikat o cache, triage, rodzaje sesji, roadmapa.
+- [ ] Pierwszy prawdziwy projekt przechodzi przez `/heliotrop:init` (kontrakt 1.x zamieniony na notatki), a jego
+  sesje są obserwowane pod kątem: punktów kontekstu, komunikatu o cache, reakcji na zmiany tematu, raportu końcowego
+  i notatki przekazania.
 
 ### Pomiar
 

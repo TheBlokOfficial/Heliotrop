@@ -1,9 +1,69 @@
 # Decisions
 
 <!-- Decision register: one entry per lasting decision (one that binds later sessions), newest first. The `end` and
-`handover` skills add entries from the session file's Decisions and User decisions. A changed decision gets a new entry
+`handover` skills add the lasting decisions of a session. A changed decision gets a new entry
 that names the one it replaces; the old entry gets `Superseded by: <date> <title>`. Entries before 2026-10-30 were
 reconstructed from commit messages; their source is the commit. -->
+
+## 2026-10-30: Hard rules only where they prevent real harm
+
+- Decision: the core holds four hard rules: main-context points (150k: hand reading to subagents; 200k: no new agents,
+  `handover`), the subagent budget (default 100k), the decisions reserved for the user, and no shared files between
+  writing agents. Everything else is guidance, each item with its reason, which the orchestrator may adapt without
+  logging.
+- Reason: 1.x wrote procedure as rules, so sessions paid for ceremony instead of judgment; a rule that cannot be
+  applied to an unusual case without its reason belongs in guidance.
+- Source: [design/heliotrop-2.0.md](design/heliotrop-2.0.md), sections Hard rules and Guidance
+
+## 2026-10-30: Project notes replace the contract
+
+- Decision: `.claude/project.md` is optional, free-form and short; `session-start.js` injects it after the core at
+  session start. The hooks read the optional lines `context-budget:`, `main-context:` and `on-edit:` anywhere in the
+  file, so a 1.x contract keeps working. Precedence: the user, then the project notes, then the engine. Replaces the
+  contract as the project's interface to the engine.
+- Reason: a required structure made every project pay for sections it did not use; notes of a few lines are cheap to
+  inject and are known without a tool call.
+- Source: [design/heliotrop-2.0.md](design/heliotrop-2.0.md), section Project notes and Resolved questions 1
+- Supersedes in part: 2026-10-30 Light mode without a contract; 2026-10-21 Project specifics only in the contract
+  (the place stays `.claude/project.md`, the required structure goes)
+
+## 2026-10-30: Init orients and asks
+
+- Decision: `init` surveys the project through one researcher slice, then asks only what the survey cannot show, each
+  question with a recommendation; it writes short project notes and one pointer line in CLAUDE.md. It never imposes
+  a document model, never restructures CLAUDE.md or existing documents without approval, and suggests a document only
+  for a real gap (status lost between sessions, decisions that keep being re-discussed). A 1.x contract is offered a
+  one-time rewrite as notes, keeping its content. Replaces the documentation audit.
+- Reason: a fixed document set and an audit cost every project the same effort, whether or not it had the gap.
+- Source: [design/heliotrop-2.0.md](design/heliotrop-2.0.md), section Init
+
+## 2026-10-30: Concepts removed in 2.0
+
+- Decision: removed as engine concepts: session kinds, triage classification, the deviation log, Deferred, slice-size
+  arithmetic and the `Size` field, code maps, review markers, the `plan` skill, light mode, the session file created
+  at session start, and the 0.x migration path in `init`. A project may keep code maps or review markers in its notes.
+  Focus on one topic is guidance, not classification.
+- Reason: they were inferred behaviour or ceremony that duplicated other rules; the budget hook already enforces the
+  ceiling that the size arithmetic estimated.
+- Source: [design/heliotrop-2.0.md](design/heliotrop-2.0.md), section Removed concepts
+
+## 2026-10-30: Handover note replaces session files
+
+- Decision: only `handover` writes a note about a session (default `docs/sessions/YYYY-MM-DD-<topic>.md`, per the
+  project notes); nothing is written at session start, and `end` gives a short report in the conversation. Replaces
+  the session file as the engine's session record.
+- Reason: a file created at the start and kept up to date through the session cost turns in every session, while
+  only a session that ends by handing over needs a written record.
+- Source: [design/heliotrop-2.0.md](design/heliotrop-2.0.md), sections Removed concepts and Skills
+
+## 2026-10-30: The core loads in every session
+
+- Decision: `core/orchestrator.md` is injected at the start of every session, with or without project notes; without
+  notes the hooks run on defaults and the session suggests `/heliotrop:init`. There is no light mode.
+- Reason: the core is short enough to load always, so a project without notes gets the same context points and
+  budgets.
+- Source: [design/heliotrop-2.0.md](design/heliotrop-2.0.md), sections Removed concepts and Resolved questions 4
+- Supersedes: 2026-10-30 Light mode without a contract
 
 ## 2026-10-30: Unrelated side requests are handled at the end of the session
 
@@ -13,6 +73,7 @@ reconstructed from commit messages; their source is the commit. -->
   short side questions at once.
 - Reason: everything loaded mid-session is re-sent on every later turn, so unrelated work costs least at the end.
 - Source: [sessions/2026-10-30-command-center.md](sessions/2026-10-30-command-center.md)
+- Superseded in part by: 2026-10-30 Concepts removed in 2.0 (Deferred; side requests now fall under the focus guidance)
 
 ## 2026-10-30: The engine points the user to the roadmap
 
@@ -96,6 +157,7 @@ reconstructed from commit messages; their source is the commit. -->
   and the end-report sections. The orchestrator infers the kind and never asks the user to choose; a shift is logged.
 - Reason: one build-shaped procedure for every session made conversations and research pay for steps they do not need.
 - Source: [design/heliotrop-1.0.md](design/heliotrop-1.0.md), section 3
+- Superseded by: 2026-10-30 Concepts removed in 2.0
 
 ## 2026-10-30: Triage of messages during work
 
@@ -103,6 +165,7 @@ reconstructed from commit messages; their source is the commit. -->
   options (backlog, new session via `handover`, switch focus); the user decides and the orchestrator never refuses.
 - Reason: a new topic in a large session pays for the whole context on every further turn.
 - Source: [design/heliotrop-1.0.md](design/heliotrop-1.0.md), section 4
+- Superseded by: 2026-10-30 Concepts removed in 2.0 (classification; the focus guidance remains)
 
 ## 2026-10-30: Explaining consequences
 
@@ -137,6 +200,8 @@ reconstructed from commit messages; their source is the commit. -->
 - Reason: decisions and open items scattered over session files had to be re-read to be found.
 - Source: [design/heliotrop-1.0.md](design/heliotrop-1.0.md), section 8
 - Superseded in part by: 2026-10-30 Roadmap as the user's command center (backlog)
+- Superseded in part by: 2026-10-30 Init orients and asks (the default document set); 2026-10-30 Handover note
+  replaces session files (the session journal)
 
 ## 2026-10-30: Light mode without a contract
 
@@ -144,6 +209,7 @@ reconstructed from commit messages; their source is the commit. -->
   sections, runs the budget and cache checks, writes no files and archives nothing.
 - Reason: the cost controls help in every project; the full workflow needs a contract.
 - Source: [design/heliotrop-1.0.md](design/heliotrop-1.0.md), section 9
+- Superseded by: 2026-10-30 The core loads in every session
 
 ## 2026-10-30: Init audits existing documentation
 
@@ -151,6 +217,7 @@ reconstructed from commit messages; their source is the commit. -->
   fixes and restructures only after approval; it checks the cache TTL and ends with `guide`.
 - Reason: a contract that does not say where existing documents are leaves every session to search for them.
 - Source: [design/heliotrop-1.0.md](design/heliotrop-1.0.md), section 10
+- Superseded by: 2026-10-30 Init orients and asks
 
 ## 2026-10-30: One brief format, one place per rule
 
@@ -159,6 +226,7 @@ reconstructed from commit messages; their source is the commit. -->
   and `Read` lines prefer `path#symbol` over line ranges.
 - Reason: copies of a rule drift apart; symbols survive edits that shift line numbers.
 - Source: [design/heliotrop-1.0.md](design/heliotrop-1.0.md), sections 12-13
+- Superseded in part by: 2026-10-30 Concepts removed in 2.0 (the field list with `Size`, `plan`, code maps)
 
 ## 2026-10-28: Budget notices let finished work verify
 
@@ -167,6 +235,7 @@ reconstructed from commit messages; their source is the commit. -->
   ~6 tool calls. `Size` counts the named reading twice and keeps the expected peak at ~80k.
 - Reason: a fresh agent pays more to orient than the few calls left; estimates of 80k have ended at 100k.
 - Source: commit 2059f76 (0.8.0)
+- Superseded in part by: 2026-10-30 Concepts removed in 2.0 (the `Size` field)
 
 ## 2026-10-27: Subagents are told their context size
 
@@ -182,6 +251,8 @@ reconstructed from commit messages; their source is the commit. -->
 - Reason: a slice costs about ½ × turns × final context and long contexts lose quality, while a fresh agent starts at
   only ~10-15k.
 - Source: commit 3983159 (0.6.0)
+- Superseded in part by: 2026-10-30 Concepts removed in 2.0 (the `Size` line); the 100k default stays as the subagent
+  budget in 2026-10-30 Hard rules only where they prevent real harm
 
 ## 2026-10-25: One item per slice
 
@@ -197,6 +268,7 @@ reconstructed from commit messages; their source is the commit. -->
   unreviewed range from the review marker.
 - Reason: TODO (not recorded in the commit).
 - Source: commit 3983159 (0.6.0)
+- Superseded by: 2026-10-30 Concepts removed in 2.0 (review markers)
 
 ## 2026-10-23: Deferral replaces fix-in-passing
 
@@ -205,6 +277,7 @@ reconstructed from commit messages; their source is the commit. -->
   once. Replaces the 0.2.0 rule that allowed fixes of up to ~10 lines outside the slice at any time.
 - Reason: everything loaded mid-session is paid for again on every later turn.
 - Source: commit 89e4d4d
+- Superseded by: 2026-10-30 Concepts removed in 2.0 (Deferred)
 
 ## 2026-10-23: Review and fixes are separate slices
 
@@ -237,6 +310,7 @@ reconstructed from commit messages; their source is the commit. -->
 - Reason: everything an agent reads stays in its context and is re-sent on every turn; dictated messages carry
   transcription errors.
 - Source: commit 9a02cf0 (0.3.0)
+- Superseded in part by: 2026-10-30 Concepts removed in 2.0 (code maps)
 
 ## 2026-10-21: Rules are defaults
 
@@ -244,6 +318,8 @@ reconstructed from commit messages; their source is the commit. -->
   correct, cheap result and logs the deviation. User decisions and the contract stay binding.
 - Reason: following a rule literally can work against a correct, cheap result.
 - Source: commit 9b183c2 (0.2.0)
+- Superseded in part by: 2026-10-30 Hard rules only where they prevent real harm (guidance may be adapted without a
+  deviation log)
 
 ## 2026-10-21: Project specifics only in the contract
 
@@ -251,3 +327,4 @@ reconstructed from commit messages; their source is the commit. -->
   `.claude/project.md`.
 - Reason: one engine serves every project.
 - Source: commit 512548c (0.1.0)
+- Superseded in part by: 2026-10-30 Project notes replace the contract (the contract's required structure)

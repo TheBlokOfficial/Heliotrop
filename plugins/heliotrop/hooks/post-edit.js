@@ -1,5 +1,5 @@
-// PostToolUse(Edit|Write): run the contract's optional `on-edit:` command for the edited file.
-// No contract, no `on-edit:` line, or a value of "none" means nothing to do.
+// PostToolUse(Edit|Write): run the project notes' optional `on-edit:` command for the edited file.
+// No project notes, no `on-edit:` line, or a value of "none" means nothing to do.
 'use strict';
 const fs = require('fs');
 const path = require('path');

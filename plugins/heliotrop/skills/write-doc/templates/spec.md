@@ -1,7 +1,7 @@
 # <feature>: specification
 
-<!-- What a change must do, as numbered checkable requirements. Written before implementation; implementers and
-reviewers check against it. Status: draft | approved | implemented. -->
+<!-- Optional suggestion: what a change must do, as numbered checkable requirements. Written before implementation;
+implementers and reviewers check against it. Language: `write-doc` `## Language`. Status: draft | approved | implemented. -->
 
 Status: <status>
 
@@ -11,7 +11,7 @@ Status: <status>
 
 ## Requirements
 
-1. <condition, then required behaviour, with numbers instead of adjectives>
+1. <condition, then required behaviour, concrete and checkable>
 
 ## Out of scope
 

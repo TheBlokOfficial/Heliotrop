@@ -1,89 +1,34 @@
 ---
 name: init
-description: Set up Heliotrop in a repository, migrate a project from the older stack engine (0.x), or review its contract. Detects old contracts, session reports and plugin installs, audits the documentation through researcher slices, runs a short setup Q&A with recommended answers, writes .claude/project.md with every document mapped, checks the prompt-cache TTL and explains how Heliotrop works. Use when a project has no contract or an old one, or the user asks to set Heliotrop up or review the contract.
+description: Set up Heliotrop in a project, orient in it, or update its project notes. Surveys what exists, asks only what the survey cannot show, writes short notes in .claude/project.md and can rewrite a Heliotrop 1.x contract as notes. Use when a project has no notes, when the user asks to set Heliotrop up, or to review or simplify the notes or a 1.x contract.
 ---
 
-# Set up a project
+# Set up and orient
 
-The contract is the project's start document: after this skill it says what every document is, where it lives, what
-it is for, when it is updated and by whom. You plan, judge and ask; the reading runs in `heliotrop:researcher` slices.
+Orient in the project the way a new colleague would: look first, then talk. You plan and ask; the reading runs in
+one `heliotrop:researcher` slice. Existing documents and agent configuration stay as they are unless the user approves
+a change.
 
-1. Detect an older engine (cheap checks, no slice):
-   - contract `.claude/project.md` with a `# stack` heading, a `type:` line, a `## Document types` section, or
-     `context-budget:` outside `## Budgets`;
-   - old plugin: Grep `stack@agent-stack` in `~/.claude/plugins/installed_plugins.json` and in `enabledPlugins` of
-     `~/.claude/settings.json`;
-   - contract with `backlog:` in `## Documents` (Heliotrop 1.0);
-   - session reports without a `kind:` line in the sessions directory (old contract `dir:`, default `docs/sessions/`):
-     a sign only together with an old contract or plugin.
-   An old contract or plugin found: migrate (step 2). Only such reports: offer the migration and start it after the
-   user's yes. An existing current contract: never overwrite it; offer a review (steps 3-8 against it).
-2. Migration, prepared now and written in step 8:
-   - Contract: drop `type:`; `## Document types` and the sessions `dir:` become `## Documents`; budget lines move to
-     `## Budgets` with their values as they are (integers and `100k` both valid); add `main-context:`, `guidance:`
-     and `user documents:` with their defaults (step 6). Project, Pipeline, Verification, Definition of done, Rules,
-     User decisions, Agents and Conventions stay unchanged unless a Q&A answer changes them.
-   - Old session reports stay in place. From the newest one, Open and Next sessions go to the roadmap and lasting
-     decisions to the decision register (`end` skill, steps 4-5).
-   - A Heliotrop 1.0 contract (`backlog:` in `## Documents`) needs only these changes, proposed in step 7 and applied
-     after approval like other restructures: the `backlog:` key is renamed to `roadmap:` (same path), `user documents:`
-     is added to `## Language` (step 6). The file itself is turned into the roadmap form (`write-doc` template
-     `roadmap.md`) only when it has the 1.0 backlog sections (Next / Later / Problems): Next becomes steps of a stage,
-     Later stays Later, Problems becomes Known problems, the file's own links stay. Any other format is kept.
-   - Old plugin still installed: tell the user to run `claude plugin uninstall stack@agent-stack`, since both engines'
-     hooks otherwise run twice.
-3. Survey: one `heliotrop:researcher` slice. Brief: the build, test, lint and format commands; CI configuration;
-   conventions (commits, branches, code rules); existing agent configuration (CLAUDE.md, AGENTS.md, `.claude/agents`,
-   `.claude/skills`, `.claude/settings*.json`, hooks), separating project knowledge from generic workflow; the
-   languages of documents, code and commits; an inventory of every documentation file (path, size in lines) grouped
-   by area: roadmap or status, ADRs or decisions, architecture, specs, changelog, session logs, READMEs, CLAUDE.md and
-   agent instructions, other. Return the findings grouped by the sections of `contract-template.md` (in this skill's
-   directory), plus the inventory.
-4. Audit: one `heliotrop:researcher` slice per area that has documents, in parallel; never read the documents
-   yourself. Each brief names the area's paths, passes the full inventory (for links and overlaps) and asks for:
-   - per document, one line: `path — purpose — structure — when updated — by whom`, with the evidence for the last
-     two (dates, changelog entries, authors named in the text), `TODO` where there is none;
-   - problems, each with `path:line` and a proposed fix: duplicates, broken links, stale status (a status or date
-     older than the work it describes), overlaps with documents of other areas.
-   Fill dates left as `TODO` with one shell command printing each document's last commit date
-   (`git log -1 --format=%as -- <path>`).
-5. Map the audit into `## Documents`: an existing roadmap or status list becomes `roadmap:` and keeps its format, an
-   ADR directory `decisions:`, a session-log directory `sessions:`, otherwise the template's defaults; types written
-   again go to `optional:` with their template (their own, or `engine`); every other document gets one `existing:`
-   line. Check: each inventory path appears exactly once.
-6. Set without asking: languages (conversation and user documents = the language the user writes in; documents and
-   code = what the repository uses, else English), `guidance: explain`, `main-context: 150k / 200k`. Git check: is
-   the project a git repository; has it a remote; is it GitHub, with `gh` installed and authenticated
-   (`gh auth status`). For each
-   missing piece, one line on what it gives (git: history and undo; a remote: backup and sharing) and the question
-   whether to set it up; run `git init` or create the GitHub repository only after the user's yes.
-   Setup Q&A: besides the git check, ask only the table's questions, and of those only what the survey cannot show;
-   where the repo shows the answer (tests in CI, a commit style),
-   state it as the proposal instead of a question. Options with the recommendation first and marked, plus one line
-   of why (`guidance: explain`). The user may answer all at once ("defaults OK").
-
-   | Question | Options | Goes to |
-   |---|---|---|
-   | Tests | standard: every behaviour change / critical only: core logic, data, security / thorough: also edge cases and error paths | Definition of done, Pipeline |
-   | Review | every code change / changes over ~100 lines only / none | Pipeline |
-   | Commits (no git: skip; no remote: no push step) | orchestrator after the user's approval / orchestrator when a slice is done / the user | Conventions `commits:`, User decisions |
-   | Optional documents | architecture, spec, ADR, changelog (any) | Documents `optional:` |
-
-7. In the same message, after the Q&A, as proposals the same "defaults OK" reply accepts, not as open questions: the
-   Pipeline's stages, derived from the tests and review answers; `when updated` and `by whom` still `TODO`;
-   documentation problems with their fixes; the agent configuration list (moves into the contract / covered by the
-   engine, to be removed / stays); for a migration, the contract diff and the roadmap and register entries from step 2.
-8. After the user approves: write `.claude/project.md` from the template, or apply the approved diff; write the
-   migrated roadmap and register entries. A project with no roadmap (a fresh one): create it from the `write-doc`
-   template `roadmap.md`: Where we are from the audit and the setup, Waiting for you from the setup decisions still
-   open, the stages empty or from the goal the user stated. An existing or migrated roadmap is not replaced. Reduce
-   CLAUDE.md to a few facts about the project and the line
-   `Project contract: .claude/project.md`. Delete, move, merge or rewrite documents and agent configuration only as
-   approved; restructuring runs as `heliotrop:doc-writer` slices, one document per slice.
-9. Prompt cache check (orchestrator rules, "Prompt cache"): with one shell command print the environment variables
-   `FORCE_PROMPT_CACHING_5M`, `CLAUDE_CODE_PROMPT_CACHE_TTL` and `ENABLE_PROMPT_CACHING_1H`; Grep `~/.claude/settings.json`
-   for those names and `promptCacheTtl`. Report each value found and whether the main session ends on a 1-hour TTL
-   (`FORCE_PROMPT_CACHING_5M` set: no; `promptCacheTtl` or the variables set to 1h: yes; nothing set: it depends on
-   the billing, as that section says). Not on 1h: offer to add `"promptCacheTtl": "1h"` to `~/.claude/settings.json`;
-   write it only after the user approves.
-10. Finish by running the `heliotrop:guide` skill.
+1. Survey: one `heliotrop:researcher` slice. Brief: what the project is; build, test and lint commands; CI;
+   conventions (commits, branches, code rules); agent configuration (CLAUDE.md, AGENTS.md, `.claude/`), separating
+   project knowledge from generic workflow; the languages of documents, code and commits; one line per document
+   (path, purpose); signs of a 1.x Heliotrop contract (`.claude/project.md` with a `# Project contract` heading, a
+   `## Budgets` section, or `guidance:` / `user documents:` / `existing:` lines).
+2. Existing notes (`.claude/project.md` without those signs): never overwrite; offer a review against the survey.
+3. Conversation: tell the user briefly what the survey found, then ask only what it cannot show, all questions in one
+   message. Each has a recommendation and a one-line reason; "defaults OK" is a valid answer. Topics: tests (what
+   needs them), review (which changes), commits and push (who, when), language (conversation, documents), how status
+   is tracked (offer a roadmap from the `write-doc` templates only when nothing tracks it), anything Claude should
+   always or never do.
+4. Git check: is it a git repository, does it have a remote, is it GitHub with `gh auth status` ok. For each missing
+   piece, one line on what it gives (history and undo; backup and sharing) and a question. Run `git init` or create
+   the repository only after a yes.
+5. Write the notes at `.claude/project.md` from `notes-template.md` (in this skill's directory): short, only what
+   differs from the defaults or cannot be seen in the repository. Add one line `Project notes: .claude/project.md` to
+   CLAUDE.md; never shorten CLAUDE.md without approval.
+6. Documents: suggest one only for a real gap (status lost between sessions, decisions that keep being re-discussed).
+   After approval a `heliotrop:doc-writer` slice creates it, one document per slice.
+7. A 1.x contract: offer once to rewrite it as notes, keeping its content (pipeline, rules, user decisions,
+   conventions, the override lines `context-budget:`, `main-context:`, `on-edit:`) and dropping the contract sections
+   the notes do not need. Apply it only after approval. Existing documents stay untouched.
+8. Finish by running the `heliotrop:guide` skill in its short form.

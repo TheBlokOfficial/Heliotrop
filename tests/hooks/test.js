@@ -12,12 +12,12 @@ const ROOT = fs.mkdtempSync(path.join(os.tmpdir(), 'heliotrop-hooks-test-'));
 const TMP = path.join(ROOT, 'tmp');
 const STATE = path.join(TMP, 'heliotrop-context-budget');
 const W = path.join(ROOT, 'work');
-const lightDir = path.join(W, 'light');
-const contractDir = path.join(W, 'withcontract');
+const bareDir = path.join(W, 'nonotes');
+const notesDir = path.join(W, 'withnotes');
 fs.mkdirSync(TMP, { recursive: true });
-fs.mkdirSync(lightDir, { recursive: true });
-fs.mkdirSync(path.join(contractDir, '.claude'), { recursive: true });
-fs.writeFileSync(path.join(contractDir, '.claude', 'project.md'), '# contract\ncontext-budget: 50k\nmain-context: 150k / 200k\n');
+fs.mkdirSync(bareDir, { recursive: true });
+fs.mkdirSync(path.join(notesDir, '.claude'), { recursive: true });
+fs.writeFileSync(path.join(notesDir, '.claude', 'project.md'), '# Notes\nWe ship on Fridays.\ncontext-budget: 50k\nmain-context: 150k / 200k\n');
 
 const env = Object.assign({}, process.env, { TEMP: TMP, TMP: TMP, TMPDIR: TMP });
 delete env.CLAUDE_PROJECT_DIR;
@@ -48,7 +48,7 @@ function readJson(f) { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } ca
 function tests() {
   const SID = 'sess1';
   const main = path.join(W, 'proj', `${SID}.jsonl`);
-  const base = { session_id: SID, transcript_path: main, cwd: lightDir, hook_event_name: 'PostToolUse', tool_name: 'Read' };
+  const base = { session_id: SID, transcript_path: main, cwd: bareDir, hook_event_name: 'PostToolUse', tool_name: 'Read' };
   const one = { ephemeral_5m_input_tokens: 0, ephemeral_1h_input_tokens: 500 };
   let r; let j; let c;
 
@@ -59,7 +59,8 @@ function tests() {
 
   writeTranscript(main, [entry(usage(150000, one))]);
   r = run('context-budget.js', base); j = parse(r.out);
-  check('main 150k notice', j && /^Heliotrop main context: ~150k/.test(ctx(j)) && /^Heliotrop main context/.test(j.systemMessage),
+  check('main 150k notice', j && /^Heliotrop main context: ~150k/.test(ctx(j)) && /write down open decisions/.test(ctx(j)) &&
+    /\(orchestrator rules, Hard rules\)/.test(ctx(j)) && !/session file/.test(ctx(j)) && /^Heliotrop main context/.test(j.systemMessage),
     `${j && j.systemMessage} [${lens(j)}]`);
   check('main notice texts <= 300 chars', j && ctx(j).length <= 300 && (j.systemMessage || '').length <= 300, lens(j));
   r = run('context-budget.js', base);
@@ -67,7 +68,8 @@ function tests() {
 
   writeTranscript(main, [entry(usage(200000, one))]);
   r = run('context-budget.js', base); j = parse(r.out);
-  check('main 200k hard point', j && /hard point/.test(ctx(j)) && /handing over/.test(j.systemMessage), `${j && j.systemMessage} [${lens(j)}]`);
+  check('main 200k hard point', j && /hard point/.test(ctx(j)) && /heliotrop:handover/.test(ctx(j)) && /ask what next/.test(ctx(j)) &&
+    /\(orchestrator rules, Hard rules\)/.test(ctx(j)) && /handing over/.test(j.systemMessage), `${j && j.systemMessage} [${lens(j)}]`);
 
   writeTranscript(main, [entry(usage(250000, one))]);
   r = run('context-budget.js', base); j = parse(r.out);
@@ -77,7 +79,7 @@ function tests() {
 
   // A compaction resets the level and keeps cacheNotice.
   fs.writeFileSync(path.join(STATE, `main-${SID}.json`), JSON.stringify({ level: 2, cacheNotice: true }));
-  run('session-start.js', { session_id: SID, source: 'compact', cwd: lightDir, hook_event_name: 'SessionStart' });
+  run('session-start.js', { session_id: SID, source: 'compact', cwd: bareDir, hook_event_name: 'SessionStart' });
   const st = readJson(path.join(STATE, `main-${SID}.json`));
   check('compact resets level', st && st.level === -1 && st.cacheNotice === true, JSON.stringify(st));
   writeTranscript(main, [entry(usage(160000, one))]);
@@ -100,64 +102,82 @@ function tests() {
   r = run('context-budget.js', Object.assign({}, base, { session_id: SID3, transcript_path: main3 }));
   check('1h cache no notice', r.out === '', `out='${r.out}'`);
 
-  // Subagent with agent_id and no contract: default 100k budget.
+  // Subagent with agent_id and no project notes: default 100k budget.
   const agentF = path.join(W, 'proj', SID, 'subagents', 'agent-abc.jsonl');
   writeTranscript(agentF, [entry(usage(85000), true)]);
   const sub = Object.assign({}, base, { agent_id: 'abc', agent_type: 'heliotrop:researcher' });
   r = run('context-budget.js', sub); j = parse(r.out);
-  check('subagent no contract 85k warning (default 100k)',
-    j && /^Heliotrop context budget: .*~85k tokens of the ~100k/.test(ctx(j)) && /\(protocol, Budget\)/.test(ctx(j)) && !j.systemMessage,
-    ctx(j).slice(0, 90));
+  check('subagent no notes 85k warning (default 100k)',
+    j && /^Heliotrop context budget: ~85k tokens of the ~100k/.test(ctx(j)) && /Plan to finish within the budget/.test(ctx(j)) &&
+    /`Status: partial` with the rest \(protocol\)\.$/.test(ctx(j)) && !j.systemMessage, ctx(j).slice(0, 90));
   r = run('context-budget.js', sub);
   check('subagent warning once', r.out === '', `out='${r.out}'`);
   writeTranscript(agentF, [entry(usage(101000), true)]);
   r = run('context-budget.js', sub); j = parse(r.out);
-  check('subagent 101k budget reached', j && /^Heliotrop context budget: .*past the ~100k slice budget/.test(ctx(j)), ctx(j).slice(0, 90));
-  // Subagent in a project whose contract sets a 50k budget.
+  check('subagent 101k budget reached', j && /^Heliotrop context budget: ~101k tokens, past the ~100k slice budget\. Wrap up:/.test(ctx(j)) &&
+    /only the build, tests and commit of finished work may still run; if only these remained and they pass, return as usual \(protocol\)\.$/.test(ctx(j)), ctx(j).slice(0, 90));
+  writeTranscript(agentF, [entry(usage(125000), true)]);
+  r = run('context-budget.js', sub); j = parse(r.out);
+  check('subagent 125k far past, stop', j && /far past the ~100k slice budget\. Stop now and return `Status: partial` \(protocol\)\.$/.test(ctx(j)), ctx(j).slice(0, 90));
+  // Subagent in a project whose notes set a 50k budget.
   const agentG = path.join(W, 'proj', SID, 'subagents', 'agent-def.jsonl');
   writeTranscript(agentG, [entry(usage(45000), true)]);
-  r = run('context-budget.js', Object.assign({}, sub, { agent_id: 'def', cwd: contractDir })); j = parse(r.out);
-  check('subagent contract 50k budget', j && /~45k tokens of the ~50k/.test(ctx(j)), ctx(j).slice(0, 90));
+  r = run('context-budget.js', Object.assign({}, sub, { agent_id: 'def', cwd: notesDir })); j = parse(r.out);
+  check('subagent notes 50k budget', j && /~45k tokens of the ~50k/.test(ctx(j)), ctx(j).slice(0, 90));
+  // Overrides in the notes are matched at line start only: an indented line does not count.
+  const indentDir = path.join(W, 'indented');
+  fs.mkdirSync(path.join(indentDir, '.claude'), { recursive: true });
+  fs.writeFileSync(path.join(indentDir, '.claude', 'project.md'), '# Notes\n  context-budget: 50k\n  main-context: 10k / 20k\n');
+  const agentH = path.join(W, 'proj', SID, 'subagents', 'agent-ghi.jsonl');
+  writeTranscript(agentH, [entry(usage(45000), true)]);
+  r = run('context-budget.js', Object.assign({}, sub, { agent_id: 'ghi', cwd: indentDir }));
+  check('override not at line start ignored (subagent default 100k)', r.out === '', `out='${r.out}'`);
+  // main-context override from the notes: 30k / 40k.
+  const mainDir = path.join(W, 'mainpoints');
+  fs.mkdirSync(path.join(mainDir, '.claude'), { recursive: true });
+  fs.writeFileSync(path.join(mainDir, '.claude', 'project.md'), '# Notes\nmain-context: 30k / 40k\n');
+  const SID4 = 'sess4';
+  const main4 = path.join(W, 'proj', `${SID4}.jsonl`);
+  writeTranscript(main4, [entry(usage(35000, one))]);
+  r = run('context-budget.js', Object.assign({}, base, { session_id: SID4, transcript_path: main4, cwd: mainDir })); j = parse(r.out);
+  check('main-context override 30k notice', j && /^Heliotrop main context: ~35k/.test(ctx(j)), `${j && j.systemMessage}`);
   // Subagent calls leave the main state alone.
   const st2 = readJson(path.join(STATE, `main-${SID}.json`));
   check('subagent call leaves main state', st2 && st2.level === 0, JSON.stringify(st2));
 
-  // SessionStart: light mode vs contract, with a fake plugin root holding the four light sections.
+  // SessionStart: the core always, then the project notes or the init line, with a fake plugin root.
   const fakeRoot = path.join(W, 'plugin');
   fs.mkdirSync(path.join(fakeRoot, 'core'), { recursive: true });
   fs.writeFileSync(path.join(fakeRoot, 'core', 'orchestrator.md'), [
-    '# Heliotrop 1.0: orchestrator rules', '', 'Intro.', '', '## Session', 'S body', '', '## Triage', 'T body', '```', '# not a heading', '```', 'T tail',
-    '', '## Explaining', 'E body', '', '## Budgets', 'B intro', '', '### Slice size', 'SS body', '', '### Main context', 'MC body', '#### detail', 'MC detail',
-    '', '### Prompt cache', 'PC body', '', '## Integration', 'I body', ''].join('\n'));
-  r = run('session-start.js', { session_id: 'x', source: 'startup', cwd: lightDir }, { CLAUDE_PLUGIN_ROOT: fakeRoot });
+    '# Heliotrop 2.0: orchestrator rules', '', 'Intro.', '', '## Hard rules', 'H body', '', '## Guidance', 'G body', ''].join('\n'));
+  const initLine = 'No project notes (.claude/project.md): suggest /heliotrop:init at most once, only when the work would benefit.';
+  r = run('session-start.js', { session_id: 'x', source: 'startup', cwd: bareDir }, { CLAUDE_PLUGIN_ROOT: fakeRoot });
   c = ctx(parse(r.out));
-  check('light mode injects light core', c.startsWith('# Heliotrop 1.0: light mode') && /## Triage\nT body\n```\n# not a heading\n```\nT tail/.test(c) &&
-    /## Explaining\nE body/.test(c) && /### Main context\nMC body\n#### detail\nMC detail/.test(c) && /### Prompt cache\nPC body/.test(c) &&
-    !/S body|SS body|I body|B intro|Session file template/.test(c), JSON.stringify(c).slice(0, 160));
-  r = run('session-start.js', { session_id: 'x', source: 'startup', cwd: contractDir }, { CLAUDE_PLUGIN_ROOT: fakeRoot });
+  check('no notes: full core, init line last, no light mode', c.startsWith('# Heliotrop 2.0: orchestrator rules') && /## Guidance\nG body/.test(c) &&
+    c.trimEnd().endsWith(initLine) && !/light mode|Project notes \(|Session file template/.test(c), JSON.stringify(c.slice(-140)));
+  r = run('session-start.js', { session_id: 'x', source: 'startup', cwd: notesDir }, { CLAUDE_PLUGIN_ROOT: fakeRoot });
   c = ctx(parse(r.out));
-  const tpl = `Session file template: ${path.join(fakeRoot, 'skills', 'end', 'report-template.md')}`;
-  check('contract injects full rules, template path last', c.startsWith('# Heliotrop 1.0: orchestrator rules') && /I body/.test(c) &&
-    c.trimEnd().endsWith(tpl), JSON.stringify(c.slice(-120)));
+  check('notes: core, then the notes under their heading, no init line', c.startsWith('# Heliotrop 2.0: orchestrator rules') &&
+    /G body\n\n# Project notes \(\.claude\/project\.md\)\n\n# Notes\nWe ship on Fridays\./.test(c) && c.trimEnd().endsWith('main-context: 150k / 200k') &&
+    !/No project notes|light mode|Session file template/.test(c), JSON.stringify(c.slice(-160)));
 
   // The real orchestrator rules, without CLAUDE_PLUGIN_ROOT (resolved from the hook's own path).
-  r = run('session-start.js', { session_id: 'x', source: 'startup', cwd: lightDir });
+  const realRules = fs.readFileSync(path.join(HOOKS, '..', 'core', 'orchestrator.md'), 'utf8').trimEnd();
+  r = run('session-start.js', { session_id: 'x', source: 'startup', cwd: bareDir });
   c = ctx(parse(r.out));
-  const sections = c.match(/^#{2,3} .*/gm) || [];
-  check('real orchestrator.md light mode', r.code === 0 && c.startsWith('# Heliotrop') &&
-    ['## Triage', '## Explaining', '### Main context', '### Prompt cache'].every((h) => sections.includes(h)), `len=${c.length} sections=${sections.join(' | ')}`);
-  r = run('session-start.js', { session_id: 'x', source: 'startup', cwd: contractDir });
+  check('real orchestrator.md without notes', r.code === 0 && c.startsWith(realRules) && c.trimEnd().endsWith(initLine) && !/light mode/.test(c),
+    `len=${c.length} tail=${JSON.stringify(c.slice(-60))}`);
+  r = run('session-start.js', { session_id: 'x', source: 'startup', cwd: notesDir });
   c = ctx(parse(r.out));
-  const realTpl = path.join(HOOKS, '..', 'skills', 'end', 'report-template.md');
-  check('real orchestrator.md with contract', r.code === 0 && /^# Heliotrop [\d.]+: orchestrator rules/.test(c) &&
-    c.trimEnd().endsWith(`Session file template: ${realTpl}`) && fs.existsSync(realTpl), JSON.stringify(c.slice(-100)));
+  check('real orchestrator.md with notes', r.code === 0 && c.startsWith(realRules) && c.includes('\n\n# Project notes (.claude/project.md)\n\n# Notes\nWe ship on Fridays.') &&
+    !/light mode|Session file template/.test(c), JSON.stringify(c.slice(-100)));
 
   // State files older than 7 days are deleted on SessionStart.
   const old = path.join(STATE, 'agent-old.json');
   fs.writeFileSync(old, '{"level":1}');
   const t = (Date.now() - 8 * 24 * 3600 * 1000) / 1000;
   fs.utimesSync(old, t, t);
-  run('session-start.js', { session_id: 'x', source: 'startup', cwd: lightDir });
+  run('session-start.js', { session_id: 'x', source: 'startup', cwd: bareDir });
   check('state older than 7 days deleted', !fs.existsSync(old) && fs.existsSync(path.join(STATE, `main-${SID}.json`)), fs.readdirSync(STATE).join(','));
 
   // Every hook parses.
