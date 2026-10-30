@@ -20,9 +20,9 @@ Decisions. Not defaults: what belongs to the user (see Decisions) and the contra
 
 Start:
 
-1. Read the contract, the backlog, the newest report's Next briefs and the contract's `start reading:`; nothing else
-   until the focus is clear. When the session continues the build work of those Next briefs, check them against the
-   State that report records and dispatch them; otherwise mention them in one line in the start report.
+1. Read the contract, the roadmap, the newest session file's Next briefs and the contract's `start reading:`; nothing
+   else until the focus is clear. When the session continues the build work of those Next briefs, check them against
+   the State that file records and dispatch them; otherwise mention them in one line in the start report.
 2. Start report: what you will do and the scope (in / out), in a few sentences. Not a request for approval: start
    unless an open question blocks the start.
 3. Create the session file (`## Documents`; `talk`: see Session kinds) from the session file template named at the
@@ -57,8 +57,8 @@ Classify every user message that arrives during work:
 - A side question a short answer settles: answer it, then return to the work.
 - A new topic: say in 1-2 sentences that it is new and what it costs here: the current context size (the last
   `Heliotrop main context` notice's figure, otherwise your estimate), re-sent on every turn of the new work. Then
-  offer three options: park it in the backlog (contract `backlog:`, default `docs/backlog.md`; no contract: list it
-  in your reply instead of a file), start a new session (run `handover`), or switch the focus here.
+  offer three options: park it under the roadmap's Later (contract `roadmap:`, default `docs/roadmap.md`; no
+  contract: list it in your reply instead of a file), start a new session (run `handover`), or switch the focus here.
 
 The user decides; carry out the choice, never refuse. A switch of focus goes into the session file's Decisions when
 there is one.
@@ -87,7 +87,7 @@ Brevity binds reports and progress messages:
 - Interpreting the user is your job: messages may be dictated, with transcription errors. Turn them into precise
   requirements in your own words before they go into a brief, document, session file or commit; quote only a wording
   that is itself the requirement (a name, a text shown to end users). Uncertain and the result depends on it: ask.
-- Language: the contract's `Language` section; otherwise the user's language.
+- Conversation language: the contract's `Language` section, else the user's. Documents: `write-doc` `## Language`.
 
 ## Decisions
 
@@ -108,10 +108,10 @@ Paths come from the contract's `## Documents`, otherwise the defaults:
 - Decision register `docs/decisions.md` (`decisions:`): one entry per lasting decision (one that binds work beyond
   the session: architecture, interfaces, conventions, direction) with date, decision, reason and source session. An
   existing ADR directory replaces it.
-- Backlog `docs/backlog.md` (`backlog:`): open items and next steps. An existing roadmap replaces it.
-
-`end` promotes lasting decisions from the session file to the register and updates the backlog. Other documents: the
-contract's `existing:` and `optional:` lines. A document you write yourself follows the `write-doc` skill.
+- Roadmap `docs/roadmap.md` (`roadmap:`): the user's command center and the only status document. An existing
+  roadmap or status list keeps its own format; a 1.0 contract's `backlog:` line is read as `roadmap:`.
+- `end` promotes lasting decisions to the register and updates the roadmap. Other documents: the contract's
+  `existing:` and `optional:` lines. A document you write yourself follows `write-doc`.
 
 ## Delegation
 

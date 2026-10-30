@@ -4,8 +4,8 @@ kind: <build | design | talk | research | debug | review>
 
 <!-- Session file. Created at the session start with the title, `kind:`, Scope, an empty Decisions and an empty
 Deferred; the other sections are added by `handover` or `end`, only those the session kind uses (`end` skill). Written
-in the contract's document language; translate the headings. The next session reads only this file, the contract and
-the backlog, so it must stand on its own. Link to other documents instead of copying them. -->
+in the language set by `write-doc` `## Language`; translate the headings. The next session reads only this file, the
+contract and the roadmap, so it must stand on its own. Link to other documents instead of copying them. -->
 
 ## Scope
 
@@ -25,7 +25,7 @@ the backlog, so it must stand on its own. Link to other documents instead of cop
 ## Deferred
 
 <!-- Appended during the session: what came up and was not needed for the work at that point. Worked off before the
-end report; what is left goes to Next sessions and the backlog. Remove the section once it is empty. -->
+end report; what is left goes to Next sessions and the roadmap. Remove the section once it is empty. -->
 
 - <item>
 

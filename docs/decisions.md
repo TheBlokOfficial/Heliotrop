@@ -5,6 +5,33 @@
 that names the one it replaces; the old entry gets `Superseded by: <date> <title>`. Entries before 2026-10-30 were
 reconstructed from commit messages; their source is the commit. -->
 
+## 2026-10-30: Engine versioning: minor by default, major only for a redesign
+
+- Decision: patch for a fix that changes no rule; minor for every change to rules, skills, agents, hooks or the contract
+  interface that a contract of an earlier version of the same major keeps working with (new keys have defaults, renamed
+  keys stay readable); major only for a redesign of the engine, decided by the user. Rule in `.claude/project.md`
+  `## Rules`; replaces the rule that made every new contract key a major version.
+- Reason: additive contract changes do not break existing projects, and a major number should mark a redesign.
+- Source: [sessions/2026-10-30-command-center.md](sessions/2026-10-30-command-center.md)
+
+## 2026-10-30: Roadmap as the user's command center
+
+- Decision: the roadmap (`roadmap:`, default `docs/roadmap.md`) replaces the backlog as the project's only status
+  document: where the project stands, what waits for the user, stages with ticked and open steps, later ideas, known
+  problems. Finished steps are ticked, not deleted; a finished stage collapses to one line. A 1.0 contract's
+  `backlog:` is read as `roadmap:`. Replaces the backlog part of "Standard document set".
+- Reason: the user works from one status document, and a backlog that deletes finished items never shows the whole
+  plan.
+- Source: [design/heliotrop-1.1.md](design/heliotrop-1.1.md), section 1
+
+## 2026-10-30: Language of user documents
+
+- Decision: contract `user documents:` (default: the conversation language) sets the language of documents written
+  for the user to work from, in 1.1 the roadmap; `documents:` covers all other documents. The rule lives only in the
+  `write-doc` skill's `## Language`.
+- Reason: the user reads the roadmap, not the technical documents, which stay in the project's document language.
+- Source: [design/heliotrop-1.1.md](design/heliotrop-1.1.md), section 2
+
 ## 2026-10-30: Repository and folder named Heliotrop, packed plugin in build/
 
 - Decision: the GitHub repository is `TheBlokOfficial/Heliotrop` (was `agent-stack`; the earlier repository of that
@@ -20,7 +47,7 @@ reconstructed from commit messages; their source is the commit. -->
 - Decision: the session metrics script, the doctor agent and `diagnostics/` leave the repository; they stay in the git
   history and return later. The Stop hook keeps archiving transcripts to `~/.claude/heliotrop-archive/`.
 - Reason: they are not adapted to the 1.0 names yet; the archive keeps the data they will need.
-- Source: Heliotrop 1.0 implementation (CHANGELOG 1.0.0); return tracked in [backlog.md](backlog.md)
+- Source: Heliotrop 1.0 implementation (CHANGELOG 1.0.0); return tracked in [roadmap.md](roadmap.md)
 
 ## 2026-10-30: The engine repository has its own contract
 
@@ -92,6 +119,7 @@ reconstructed from commit messages; their source is the commit. -->
   `skills/write-doc/templates/`.
 - Reason: decisions and open items scattered over session files had to be re-read to be found.
 - Source: [design/heliotrop-1.0.md](design/heliotrop-1.0.md), section 8
+- Superseded in part by: 2026-10-30 Roadmap as the user's command center (backlog)
 
 ## 2026-10-30: Light mode without a contract
 

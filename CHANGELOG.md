@@ -3,15 +3,28 @@
 <!-- Changes visible to users of the engine, newest version first. Versions before 1.0.0 (the `stack` plugin, 0.1.0 to
 0.8.0) are described in the git log. -->
 
-## Unreleased
+## 1.1.0 — 2026-10-30
+
+Design: [docs/design/heliotrop-1.1.md](docs/design/heliotrop-1.1.md). A 1.0 contract keeps working unchanged.
 
 ### Added
 
+- Roadmap (`roadmap:`, default `docs/roadmap.md`), the user's command center and the project's only status document:
+  where the project stands, what waits for the user, stages with ticked and open steps, later ideas, known problems.
+  Engine template `skills/write-doc/templates/roadmap.md`. `plan` adds multi-session stages; `end` and `handover` tick
+  finished steps and rewrite the state; triage parks new topics under Later.
+- Contract `## Language` line `user documents:` (default: the conversation language) for documents written for the
+  user, in 1.1 the roadmap. The language rule lives only in `write-doc` `## Language`.
 - `build.bat` (wrapper for `build.ps1`) packs the plugin into `build/heliotrop-<version>.zip` (plugin at the zip root); the zip for 1.0.0 is
   committed.
 
 ### Changed
 
+- The roadmap replaces the backlog; the `backlog` template is removed. A 1.0 contract's `backlog:` is read as
+  `roadmap:`, and its file is converted to the roadmap form on the next `end` or `handover`; `init` migration renames
+  the key.
+- `doc-writer` takes the document language from `write-doc` `## Language` (1.0 looked for a per-entry language that
+  the contract never had).
 - Repository renamed to `TheBlokOfficial/Heliotrop`; local folder `Heliotrop`.
 
 ## 1.0.0 — 2026-10-30

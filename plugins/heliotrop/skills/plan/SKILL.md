@@ -20,5 +20,8 @@ description: Break a task into pipeline stages and delegatable slices with ready
    (`heliotrop:<agent>, model <model>`), `Goal`, `Read`, `Size`, `Constraints`, `Done when`, `Return`. `Read` names
    exact paths as `path#symbol`, or `path:start-end` where no symbol fits. When you do not know them, the first slice
    is a `heliotrop:researcher` slice that finds them, as a code map when the slice-size rules call for one.
-6. Record the plan in the session's task list if the client has one, not as prose. The start report mentions it in
+6. A plan that spans more than the current session: add its stages and steps to the roadmap's Stages (contract
+   `roadmap:`) as unticked steps, one line each in plain words; `end` ticks them later. No contract (light mode):
+   skip this and list the stages in the reply.
+7. Record the plan in the session's task list if the client has one, not as prose. The start report mentions it in
    one or two sentences.

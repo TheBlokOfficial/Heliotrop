@@ -1,8 +1,8 @@
 # Project contract
 
 <!-- Read by the Heliotrop engine at the start of every session and by every heliotrop agent. Keep it short: facts and
-pointers, not essays. Keep these headings and the `key:` lines (hooks read them); write the content in the project's
-language. Delete placeholder lines that do not apply. -->
+pointers, not essays. Keep these headings and the `key:` lines (hooks read them); write the content in the `documents:`
+language of this contract's `## Language` section. Delete placeholder lines that do not apply. -->
 
 ## Project
 
@@ -11,7 +11,9 @@ language. Delete placeholder lines that do not apply. -->
 ## Language
 
 - conversation: <language for talking to the user>
-- documents: <language of project documents and session reports>
+- user documents: <language of documents written for the user to work from: the roadmap; default: see `write-doc`
+  `## Language`>
+- documents: <language of every other document: session reports, decisions, architecture, specs, research notes>
 - code, commits: <language>
 - guidance: explain  <!-- explain (default): consequences, terms and short reasons; change to brief for consequences
   only -->
@@ -19,19 +21,19 @@ language. Delete placeholder lines that do not apply. -->
 
 ## Sessions
 
-- start reading: <besides the contract, the backlog and the newest session file's Next briefs, e.g. a section of a
+- start reading: <besides the contract, the roadmap and the newest session file's Next briefs, e.g. a section of a
   status document; or "none">
 - end steps: <e.g. commit; or "none">
 
 ## Documents
 
 <!-- What lives where (orchestrator rules, "Documents"). Standard lines: `<path>, committed | temporary`. An existing
-ADR directory replaces the decision register and an existing roadmap replaces the backlog; they keep their own
-format. -->
+ADR directory replaces the decision register; an existing roadmap or status list becomes `roadmap:`; both keep
+their own format. -->
 
 - sessions: docs/sessions/, committed
 - decisions: docs/decisions.md, committed
-- backlog: docs/backlog.md, committed
+- roadmap: docs/roadmap.md, committed
 - research: docs/research/, <committed | temporary>
 - reviews: docs/reviews/, <committed | temporary>
 - code-maps: docs/code-maps/, temporary

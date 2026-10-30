@@ -9,7 +9,7 @@ Heliotrop, a Claude Code plugin: a project-agnostic orchestrator workflow. Layou
 
 - `plugins/heliotrop/`: the engine (orchestrator rules, skills, agents, hooks, templates).
 - `docs/design/`: one design note per version or larger change.
-- `docs/decisions.md`, `docs/backlog.md`, `docs/sessions/`: see `## Documents`.
+- `docs/decisions.md`, `docs/roadmap.md`, `docs/sessions/`: see `## Documents`.
 - `README.md`, `CHANGELOG.md`: install and usage; changes per version.
 - `tests/hooks/`: hook smoke test on synthetic input.
 
@@ -26,6 +26,7 @@ Heliotrop, a Claude Code plugin: a project-agnostic orchestrator workflow. Layou
 
 - conversation: Polish
 - documents: English
+- user documents: Polish
 - code, commits: English
 - guidance: brief
 
@@ -38,7 +39,7 @@ Heliotrop, a Claude Code plugin: a project-agnostic orchestrator workflow. Layou
 
 - sessions: docs/sessions/, committed  <!-- only for sessions that took decisions -->
 - decisions: docs/decisions.md, committed
-- backlog: docs/backlog.md, committed
+- roadmap: docs/roadmap.md, committed
 - research: docs/research/, temporary
 - reviews: docs/reviews/, temporary
 - code-maps: docs/code-maps/, temporary
@@ -84,8 +85,10 @@ checklist: none
   only when it pays for itself.
 - One rule, one place: other files refer to it by its heading.
 - Nothing project-specific in the engine; a project's paths, commands and documents belong in its own contract.
-- Versioning: a change to rules or skills is a minor version; a change to the contract headings or `key:` lines (the
-  interface for projects) is a major version.
+- Versioning: patch for a fix that changes no rule; minor for every change to rules, skills, agents, hooks or the
+  contract interface that a contract written for an earlier version of the same major keeps working with (a new key or
+  heading has a default; a renamed key stays readable under its old name); major only for a redesign of the engine,
+  decided by the user.
 
 ## User decisions
 

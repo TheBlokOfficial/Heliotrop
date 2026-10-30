@@ -13,17 +13,23 @@ it is for, when it is updated and by whom. You plan, judge and ask; the reading 
      `context-budget:` outside `## Budgets`;
    - old plugin: Grep `stack@agent-stack` in `~/.claude/plugins/installed_plugins.json` and in `enabledPlugins` of
      `~/.claude/settings.json`;
+   - contract with `backlog:` in `## Documents` (Heliotrop 1.0);
    - session reports without a `kind:` line in the sessions directory (old contract `dir:`, default `docs/sessions/`):
-     a sign only together with one of the two above.
+     a sign only together with an old contract or plugin.
    An old contract or plugin found: migrate (step 2). Only such reports: offer the migration and start it after the
    user's yes. An existing current contract: never overwrite it; offer a review (steps 3-8 against it).
 2. Migration, prepared now and written in step 8:
    - Contract: drop `type:`; `## Document types` and the sessions `dir:` become `## Documents`; budget lines move to
-     `## Budgets` with their values as they are (integers and `100k` both valid); add `main-context:` and `guidance:`
-     with their defaults (step 6). Project, Pipeline, Verification, Definition of done, Rules, User decisions, Agents and Conventions
-     stay unchanged unless a Q&A answer changes them.
-   - Old session reports stay in place. From the newest one, Open and Next sessions go to the backlog and lasting
+     `## Budgets` with their values as they are (integers and `100k` both valid); add `main-context:`, `guidance:`
+     and `user documents:` with their defaults (step 6). Project, Pipeline, Verification, Definition of done, Rules,
+     User decisions, Agents and Conventions stay unchanged unless a Q&A answer changes them.
+   - Old session reports stay in place. From the newest one, Open and Next sessions go to the roadmap and lasting
      decisions to the decision register (`end` skill, steps 4-5).
+   - A Heliotrop 1.0 contract (`backlog:` in `## Documents`) needs only these changes, proposed in step 7 and applied
+     after approval like other restructures: the `backlog:` key is renamed to `roadmap:` (same path), `user documents:`
+     is added to `## Language` (step 6). The file itself is turned into the roadmap form (`write-doc` template
+     `roadmap.md`) only when it has the 1.0 backlog sections (Next / Later / Problems): Next becomes steps of a stage,
+     Later stays Later, Problems becomes Known problems, the file's own links stay. Any other format is kept.
    - Old plugin still installed: tell the user to run `claude plugin uninstall stack@agent-stack`, since both engines'
      hooks otherwise run twice.
 3. Survey: one `heliotrop:researcher` slice. Brief: the build, test, lint and format commands; CI configuration;
@@ -41,13 +47,14 @@ it is for, when it is updated and by whom. You plan, judge and ask; the reading 
      older than the work it describes), overlaps with documents of other areas.
    Fill dates left as `TODO` with one shell command printing each document's last commit date
    (`git log -1 --format=%as -- <path>`).
-5. Map the audit into `## Documents`: an existing roadmap or status list becomes `backlog:`, an ADR directory
-   `decisions:`, a session-log directory `sessions:`, otherwise the template's defaults; types written again go to
-   `optional:` with their template (their own, or `engine`); every other document gets one `existing:` line. Check:
-   each inventory path appears exactly once.
-6. Set without asking: languages (conversation = the language the user writes in; documents and code = what the
-   repository uses, else English), `guidance: explain`, `main-context: 150k / 200k`. Git check: is the project a git
-   repository; has it a remote; is it GitHub, with `gh` installed and authenticated (`gh auth status`). For each
+5. Map the audit into `## Documents`: an existing roadmap or status list becomes `roadmap:` and keeps its format, an
+   ADR directory `decisions:`, a session-log directory `sessions:`, otherwise the template's defaults; types written
+   again go to `optional:` with their template (their own, or `engine`); every other document gets one `existing:`
+   line. Check: each inventory path appears exactly once.
+6. Set without asking: languages (conversation and user documents = the language the user writes in; documents and
+   code = what the repository uses, else English), `guidance: explain`, `main-context: 150k / 200k`. Git check: is
+   the project a git repository; has it a remote; is it GitHub, with `gh` installed and authenticated
+   (`gh auth status`). For each
    missing piece, one line on what it gives (git: history and undo; a remote: backup and sharing) and the question
    whether to set it up; run `git init` or create the GitHub repository only after the user's yes.
    Setup Q&A: besides the git check, ask only the table's questions, and of those only what the survey cannot show;
@@ -65,9 +72,9 @@ it is for, when it is updated and by whom. You plan, judge and ask; the reading 
 7. In the same message, after the Q&A, as proposals the same "defaults OK" reply accepts, not as open questions: the
    Pipeline's stages, derived from the tests and review answers; `when updated` and `by whom` still `TODO`;
    documentation problems with their fixes; the agent configuration list (moves into the contract / covered by the
-   engine, to be removed / stays); for a migration, the contract diff and the backlog and register entries from step 2.
+   engine, to be removed / stays); for a migration, the contract diff and the roadmap and register entries from step 2.
 8. After the user approves: write `.claude/project.md` from the template, or apply the approved diff; write the
-   migrated backlog and register entries; reduce CLAUDE.md to a few facts about the project and the line
+   migrated roadmap and register entries; reduce CLAUDE.md to a few facts about the project and the line
    `Project contract: .claude/project.md`. Delete, move, merge or rewrite documents and agent configuration only as
    approved; restructuring runs as `heliotrop:doc-writer` slices, one document per slice.
 9. Prompt cache check (orchestrator rules, "Prompt cache"): with one shell command print the environment variables
