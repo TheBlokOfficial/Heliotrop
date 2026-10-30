@@ -1,10 +1,7 @@
 # Project contract
 
 ## Workflow
-<!-- How review, tests, verification and commits run here, beyond the quality floor. -->
-
-## Quality
-<!-- User-approved deviations from the quality floor, each with its reason; stricter bars. -->
+<!-- How review, tests, verification and commits run here. -->
 
 ## Checks
 <!-- Check commands; optional line "on-edit: <command> {file}" runs after each file edit, written at the start of a line. -->

@@ -6,7 +6,7 @@
     {
       "name": "heliotrop",
       "source": "./plugins/heliotrop",
-      "description": "Project-agnostic orchestrator workflow with a quality floor, driven by a per-project contract (.claude/contract.md) and a CLAUDE.md block."
+      "description": "Project-agnostic orchestrator workflow that keeps the engine's communication structures, driven by a per-project contract (.claude/contract.md) and a CLAUDE.md block."
     }
   ]
 }

@@ -1,7 +1,7 @@
 # Project contract
 
 ## Workflow
-<!-- How review, tests, verification and commits run here, beyond the quality floor. -->
+<!-- How review, tests, verification and commits run here. -->
 Change cycle:
 
 1. Observation from a real session (a cost, a failure, a rule that misfired).
@@ -10,9 +10,6 @@ Change cycle:
 4. A `reviewer` slice for every change to the orchestrator rules, agents, skills or hooks, whatever its size.
 5. Version bump in `plugins/heliotrop/.claude-plugin/plugin.json` and a `CHANGELOG.md` entry.
 6. Observation in later real sessions.
-
-## Quality
-<!-- User-approved deviations from the quality floor, each with its reason; stricter bars. -->
 
 ## Checks
 <!-- Check commands; optional line "on-edit: <command> {file}" runs after each file edit, written at the start of a line. -->

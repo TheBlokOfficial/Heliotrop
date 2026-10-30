@@ -6,18 +6,18 @@ odhaczany, nie usuwany; zakończony etap zwija się do jednej linii. -->
 
 ## Gdzie jesteśmy
 
-Wersje 2.0 i 2.1 są gotowe i zatwierdzone (commity). Wersja 3.0 jest zbudowana w tej sesji i czeka na zatwierdzenie
-(zmiany niezatwierdzone): kontrakt `.claude/contract.md` zamiast notatek o projekcie, blok w `CLAUDE.md`, strażnik
-(bez kontraktu hooki milczą), poprzeczka jakości jako twarda reguła, liczby w jednym miejscu (`hooks/common.js`),
-`init` proponuje zestaw dokumentów. Usunięte: skill `guide`, komunikat o cache, reguła o dwóch agentach piszących.
-Repozytorium zostało przeniesione na własny kontrakt i `CLAUDE.md`. Następny krok: obserwacja wersji 3.0 w prawdziwych
-projektach, w tym migracja istniejących projektów z 2.x przez `/heliotrop:init`.
+Wersje 2.0, 2.1 i 3.0 są gotowe, zatwierdzone i wypchnięte. Wersja 3.0: kontrakt `.claude/contract.md` zamiast notatek
+o projekcie, blok w `CLAUDE.md`, strażnik (bez kontraktu hooki milczą), liczby w jednym miejscu (`hooks/common.js`),
+`init` proponuje zestaw dokumentów; usunięte: skill `guide`, komunikat o cache, reguła o dwóch agentach piszących.
+Wersja 3.1 jest gotowa: poprzeczka jakości z 3.0 wycofana (źle odczytana intencja), w jej miejsce twarda reguła
+„Struktury silnika” (kontrakt, roadmapa, notatki przekazania i reguły w strukturze silnika i aktualne; wyjątek robi
+tylko użytkownik). Następny krok bez zmian: obserwacja w prawdziwych projektach, w tym migracja projektów z 2.x przez
+`/heliotrop:init`.
 
 ## Czeka na Ciebie
 
-- Zatwierdzenie (commit) wersji 3.0: zbudowana, nie jest jeszcze zatwierdzona. Po
-  zatwierdzeniu: przebudowanie archiwum `build/` (`build.bat`).
-- Przeinstalowanie wtyczki z wersji 3.0 (README).
+- Po zatwierdzeniu wersji 3.1: przebudowanie archiwum `build/` (`build.bat`).
+- Przeinstalowanie wtyczki z wersji 3.1 (README).
 
 ## Etapy
 
@@ -31,16 +31,9 @@ projektach, w tym migracja istniejących projektów z 2.x przez `/heliotrop:init
 
 ### ✓ Heliotrop 2.1: rodzaje pracy w rdzeniu, gotowe 2026-10-30
 
-### Heliotrop 3.0: kontrakt, strażnik, poprzeczka jakości
+### ✓ Heliotrop 3.0: kontrakt, strażnik, gotowe 2026-10-30 (zatwierdzone i wypchnięte; poprzeczka jakości wycofana w 3.1)
 
-Zbudowana, czeka na zatwierdzenie. Decyzje: [rejestr](decisions.md); notatki projektowej nie ma.
-
-- [x] Kontrakt `.claude/contract.md` ze stałym szkieletem, blok w `CLAUDE.md`, strażnik, poprzeczka jakości.
-- [x] Liczby w `hooks/common.js` i podstawianie w regułach; usunięcie `guide`, komunikatu o cache i reguły o dwóch
-  agentach.
-- [x] Migracja tego repozytorium: `.claude/contract.md` i `CLAUDE.md` (plik `.claude/project.md` do usunięcia po
-  zatwierdzeniu).
-- [ ] Zatwierdzenie i commit (patrz Czeka na Ciebie).
+### ✓ Heliotrop 3.1: struktury silnika zamiast poprzeczki jakości, gotowe 2026-10-31 ([rejestr](decisions.md))
 
 ### Wdrożenie
 
@@ -49,7 +42,7 @@ Silnik działa w prawdziwych sesjach, a jego zachowanie jest sprawdzone w prakty
 - [ ] Przeinstalowanie wtyczki (patrz Czeka na Ciebie).
 - [ ] Sprawdzenie, czy żadna inna wtyczka Claude Code nie nazywa się `heliotrop`.
 - [ ] Pierwszy prawdziwy projekt (z notatkami 2.x lub kontraktem 1.x) przechodzi przez `/heliotrop:init`, a jego sesje
-  są obserwowane pod kątem: punktów kontekstu, poprzeczki jakości, zachowania strażnika, bloku w `CLAUDE.md` w
+  są obserwowane pod kątem: punktów kontekstu, reguły „Struktury silnika”, zachowania strażnika, bloku w `CLAUDE.md` w
   subagentach, raportu końcowego i notatki przekazania.
 
 ### Pomiar

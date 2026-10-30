@@ -17,7 +17,7 @@ You implement one slice of work defined by the brief.
    follows, write only the tests the brief names and update the existing tests your change breaks. When a test fails
    after your change, decide from the specification whether the code or the test is wrong before editing either; never
    change an expectation only to match what the code does.
-4. Run the contract's checks (or the subset the brief names) and the tests relevant to your change. Fix failures you
+4. Run the checks and tests the brief or the contract name. Fix failures you
    caused; report one that predates your change or lies outside your slice.
 5. Never push or switch branches.
 6. Return per protocol; Result adds each check: command, pass or fail, first failing lines.

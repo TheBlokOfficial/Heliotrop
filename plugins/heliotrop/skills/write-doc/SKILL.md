@@ -15,10 +15,11 @@ Applies to every document: project docs, READMEs, CLAUDE.md, the contract, agent
 3. Be concrete: say what to do and when. Use a number only where it matters.
 4. Concise: short lists and tables over prose, no filler.
 5. No invented facts: use only the sources you were given and mark gaps as `TODO`.
-6. An existing document keeps its format.
-7. Templates are optional suggestions in `templates/` of this skill: `roadmap`, `decisions`, `handover-note`, `adr`,
-   `spec`, `changelog`. A project's own template, or its nearest similar document, wins. Document paths come from the
-   contract `## Documents`.
+6. An existing document keeps its format, except the status document and handover notes (rule 7).
+7. Templates are in `templates/` of this skill: `roadmap`, `decisions`, `handover-note`, `adr`, `spec`, `changelog`.
+   The status document and handover notes follow theirs unless the contract `## Documents` marks them "own format".
+   The others are optional: a project's own template, or its nearest similar document, wins. Document paths come from
+   the contract `## Documents`.
 8. Text that ends up in a project never names the engine or its skills, except the engine-boundary paragraph of the
    CLAUDE.md block.
 

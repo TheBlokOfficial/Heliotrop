@@ -22,7 +22,7 @@ the defaults below.
    ADR directory: one record per decision.
 4. End steps: run the ones the contract `## Workflow` names. Commit only as `## Workflow` says and only after the
    user approves; pushing is the user's decision.
-5. Report, short: done; decisions taken without the user; what is not verified and why; open; suggested next. When the status document changed, add
+5. Report, short: done; decisions taken without the user; open; suggested next. When the status document changed, add
    its link and what changed in a few words.
 
 `end` writes no session file.

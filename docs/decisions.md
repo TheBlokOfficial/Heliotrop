@@ -5,6 +5,19 @@
 that names the one it replaces; the old entry gets `Superseded by: <date> <title>`. Entries before 2026-10-30 were
 reconstructed from commit messages; their source is the commit. -->
 
+## 2026-10-31: Quality floor withdrawn, engine structures rule instead
+
+- Decision: the 3.0 quality floor (mandatory verification, review and tests, the contract `## Quality`) is withdrawn.
+  A hard rule "Engine structures" replaces it: the contract, the status document (roadmap), handover notes and the
+  rules stay in the engine's structure and current; a missing one is created and recorded in the contract
+  `## Documents`; only the user exempts one ("own format"). The contract skeleton is Workflow, Checks, Documents, User
+  decisions, Overrides, Notes. The verifier's `NO CHECKS` and the ban on weakening a check stay. Minor version 3.1.0.
+- Reason: the frame the engine is meant to impose is its communication structures, not a testing mandate; the floor
+  misread that intent.
+- Source: [CHANGELOG](../CHANGELOG.md), 3.1.0
+- Supersedes: 2026-10-30 Quality floor as a hard rule
+- Supersedes in part: 2026-10-30 Contract with an engine-owned skeleton (the heading Quality)
+
 ## 2026-10-30: 3.0 is built without a design note
 
 - Decision: engine 3.0 is built from a shared specification carried in the briefs, with no note in `docs/design/`; the
@@ -71,6 +84,7 @@ reconstructed from commit messages; their source is the commit. -->
   a check could still report success.
 - Source: [CHANGELOG](../CHANGELOG.md), 3.0.0
 - Supersedes in part: 2026-10-30 Hard rules only where they prevent real harm (the set of hard rules)
+- Superseded by: 2026-10-31 Quality floor withdrawn, engine structures rule instead
 
 ## 2026-10-30: Guard by contract presence
 
@@ -96,6 +110,7 @@ reconstructed from commit messages; their source is the commit. -->
   costly, and this skeleton is short and freezes no values.
 - Source: [CHANGELOG](../CHANGELOG.md), 3.0.0
 - Supersedes: 2026-10-30 Project notes replace the contract
+- Superseded in part by: 2026-10-31 Quality floor withdrawn, engine structures rule instead (the heading Quality)
 
 ## 2026-10-30: Hard rules only where they prevent real harm
 

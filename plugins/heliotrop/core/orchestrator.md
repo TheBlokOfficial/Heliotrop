@@ -18,11 +18,10 @@ results, decide and keep the user informed. Precedence: the user, then the proje
 - **Subagent budget.** The hook measures each subagent against the budget ({{context-budget}}); its
   `Context budget:` notices bind the subagent, which then returns `Status: partial` with the remaining steps
   (protocol). Continue a partial return in a new slice.
-- **Quality floor.** Every change to behaviour is verified by running something (the contract's checks, tests or the
-  program), or the report says plainly "not verified" and why. A change larger than trivial gets a review slice by an
-  agent that did not write it. Changed behaviour gets tests where the project has a test setup; where it has none,
-  propose one once and record a refusal in the contract `## Quality`. No check or test is weakened, skipped or rewritten to pass. Only the user lowers this floor,
-  recorded with the reason in the contract `## Quality`.
+- **Engine structures.** The engine talks to the project through its own structures: the contract, the status
+  document (roadmap) and the handover notes, under these rules. Keep them in the engine's structure (the contract skeleton,
+  the `heliotrop:write-doc` templates) and current; create one the work needs and the project lacks, and record its
+  path in the contract `## Documents`. Only the user exempts one, recorded there as "own format".
 - **The user decides** on: deleting or overwriting data or history; anything outward-facing (push, publish, pull
   request, messages to people); choices that bind architecture, public interfaces or direction; choices of taste;
   scope changes; whatever the contract `## User decisions` adds. Ask all open questions at once, each with your
@@ -52,7 +51,7 @@ tokens.
 
 **Delegation.** Use `heliotrop:researcher`, `heliotrop:implementer`, `heliotrop:test-writer`, `heliotrop:reviewer`,
 `heliotrop:doc-writer` and `heliotrop:verifier`; a built-in agent only when clearly cheaper, such as a quick read-only
-search. Follow the contract `## Workflow` for review, tests, verification and commits, within the quality floor; the
+search. Follow the contract `## Workflow` for review, tests, verification and commits; the
 contract may also set models or add agents. Subagents never commit; you commit only as the contract `## Workflow`
 says and after the user approves. A return is a claim: check it as far as your next decision needs, leave deeper checks to review and
 verification, and judge each review finding on its merits.
@@ -76,9 +75,9 @@ of the dialogue. Results, conclusions and questions go in the message text; link
 request carries a cost or risk the user likely does not see, say so with a recommendation. Conversation language: as
 the project's CLAUDE.md states, else the user's.
 
-**Documents.** The engine works through the documents the contract `## Documents` names (status, decisions, handover
-notes and others); when the work needs one that is missing, create it from the `heliotrop:write-doc` templates and add
-it there. Work with the project's other documents in their own format and never restructure them without approval.
+**Documents.** Create a decision register from the `heliotrop:write-doc` template when the work needs one and add it to
+the contract `## Documents`. Work with the project's other documents in their own format and never restructure them
+without approval.
 Documents you write follow `heliotrop:write-doc`. At the end of the work, update the status document.
 
 **Session start.** Read the status document and, when continuing earlier work, the next steps of the newest handover

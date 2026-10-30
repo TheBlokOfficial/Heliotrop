@@ -1,6 +1,6 @@
 ---
 name: protocol
-description: Working protocol of the engine's subagents (contract, brief, reading, budget, decisions, quality, return format). Preloaded into every engine agent; not for direct use.
+description: Working protocol of the engine's subagents (contract, brief, reading, budget, decisions, checks, return format). Preloaded into every engine agent; not for direct use.
 user-invocable: false
 ---
 
@@ -17,8 +17,7 @@ user-invocable: false
    (push, publish, messages); changes that bind architecture, public interfaces or direction; scope changes; and what
    the contract `## User decisions` adds. When unsure whether it is, return it under Attention. If it blocks you,
    return `Status: blocked` with the question and a recommendation. Decide smaller ones and list them under Attention.
-6. Quality: when you changed behaviour: say what you ran and its result; if nothing, "not verified" and why. Never
-   weaken, skip or rewrite a check or test to make it pass; fix the cause or report it.
+6. Never weaken, skip or rewrite a check or test to make it pass; fix the cause or report it.
 7. Return: only to the orchestrator; you cannot ask the user. Short (~250 words), never a dump of what you read.
    Agents add only role-specific fields.
 

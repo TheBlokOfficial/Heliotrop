@@ -13,9 +13,9 @@ at a time. Write a review report only where the brief names a path.
 
 1. Target: the brief names a diff range, branch, files or document. For code, start with `git diff --stat`, then read
    the changed hunks file by file and enough of the surrounding code to judge them.
-2. Code, in this order: correctness (bugs, edge cases, error handling), the contract's `## Quality` and `## Workflow`
-   (tests, verification, boundaries, invariants, documents), consistency with existing code, simplicity. Flag a
-   change nothing verifies, and any check or test weakened, skipped or rewritten to pass.
+2. Code, in this order: correctness (bugs, edge cases, error handling), the contract's `## Workflow`
+   (tests, verification, boundaries, invariants, documents), consistency with existing code, simplicity. Flag any
+   check or test weakened, skipped or rewritten to pass.
 3. Design or plan: does it reach its goal; what it leaves undecided; missing alternatives; risks; conflicts with the
    contract or existing decisions. Use the review criteria and verdict scale the contract defines, if any.
 4. Verify every finding before reporting it: `path:line` and a concrete failure scenario. Drop what you cannot

@@ -17,8 +17,8 @@ Two uses:
 1. Do everything the `end` skill does (leftovers, status document with its roadmap pruning, decision register, end
    steps).
 2. Write the handover note from `write-doc/templates/handover-note.md` at `docs/sessions/YYYY-MM-DD-<topic>.md`, or
-   where the contract `## Documents` says (language: `write-doc` `## Language`). Skip it only when nothing is left to
-   continue. It stands on its own and links to content instead of copying it.
+   where the contract `## Documents` says (language: `write-doc` `## Language`); exception: the contract marks handover
+   notes "own format", then keep that format. Skip it only when nothing is left to continue. It stands on its own and links to content instead of copying it.
 3. Tell the user, in a few lines: what is done, what is left, and how to resume. Start a new conversation (or
    `/clear`) and ask to continue the topic; the new session reads the contract, the status document and the
    handover note's next steps. Give the note's path, and answer the deferred side questions or list the unanswered

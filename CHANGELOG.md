@@ -3,6 +3,22 @@
 <!-- Changes visible to users of the engine, newest version first. Versions before 1.0.0 (the `stack` plugin, 0.1.0 to
 0.8.0) are described in the git log. -->
 
+## 3.1.0 — 2026-10-31
+
+No design note: the decisions are in [docs/decisions.md](docs/decisions.md).
+
+### Changed
+
+- New hard rule "Engine structures": the contract, the status document (roadmap), handover notes and the rules stay in
+  the engine's structure and current; a missing one is created and recorded in the contract `## Documents`. Only the
+  user exempts one ("own format").
+- The contract skeleton is Workflow, Checks, Documents, User decisions, Overrides, Notes (no `## Quality`).
+
+### Removed
+
+- The 3.0 quality floor (mandatory verification, review and tests, the contract `## Quality`). The verifier still
+  reports `NO CHECKS` when none are defined, and no check is weakened to pass.
+
 ## 3.0.0 — 2026-10-30
 
 No design note: the decisions are in [docs/decisions.md](docs/decisions.md).
