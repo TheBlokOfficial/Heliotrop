@@ -1,6 +1,6 @@
 {
   "name": "heliotrop",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Project-agnostic orchestrator workflow for Claude Code: the main session plans, decides and talks with the user while subagents read and execute; context and cache notices, a standard document set with a roadmap as the user's command center, and a light mode without a contract. Project specifics live in each repository's .claude/project.md.",
   "author": { "name": "TheBlok" }
 }

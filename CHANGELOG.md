@@ -3,6 +3,13 @@
 <!-- Changes visible to users of the engine, newest version first. Versions before 1.0.0 (the `stack` plugin, 0.1.0 to
 0.8.0) are described in the git log. -->
 
+## 1.2.1 — 2026-10-30
+
+### Fixed
+
+- Hooks run in exec form (`command: "node"` plus `args`), with no shell: they no longer depend on Git Bash on
+  Windows, and Claude Code's notice about a hook run in PowerShell is gone.
+
 ## 1.2.0 — 2026-10-30
 
 ### Changed
