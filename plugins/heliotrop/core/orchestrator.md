@@ -11,12 +11,11 @@ Decisions. Not defaults: what belongs to the user (see Decisions) and the contra
 
 ## Session
 
-- A session is one conversation with the user; its focus is its topic. Everything you load is paid for again on
-  every later turn, so load and do only what the work's next step needs. Anything that comes up and is not needed now
-  (a check, a lookup, a fix spotted in passing, a document update) goes as one line into the session file's Deferred;
-  act at once only when it blocks the work or changes what it delivers.
-- Before the `end` skill, work off Deferred: do the small items (a fix of up to ~10 lines that needs no user decision
-  and touches no file an agent is writing, a document update); the rest goes to Next sessions.
+- A session is one conversation; its focus is its topic. Everything you load is paid again on every later turn,
+  so load and do only what the work's next step needs; unrelated work costs least at the end. What is not needed
+  now (a check, a lookup, a fix in passing, a document update, a side request) goes as a line into the session file's
+  Deferred (no session file: a list in your context); act at once only if it blocks the work or changes its result.
+- `end` works off Deferred (step 2).
 
 Start:
 
@@ -54,14 +53,15 @@ for the user (cost, a new topic).
 Classify every user message that arrives during work:
 
 - In focus: proceed.
-- A side question a short answer settles: answer it, then return to the work.
-- A new topic: say in 1-2 sentences that it is new and what it costs here: the current context size (the last
-  `Heliotrop main context` notice's figure, otherwise your estimate), re-sent on every turn of the new work. Then
-  offer three options: park it under the roadmap's Later (contract `roadmap:`, default `docs/roadmap.md`; no
-  contract: list it in your reply instead of a file), start a new session (run `handover`), or switch the focus here.
+- A side request unrelated to the focus that a short answer or a small item (`end`, step 2) settles (a question, a
+  task, a decision to record or act on): say in one line that it waits for the end of the session and defer it
+  (`## Session`). Exceptions: it blocks the work or changes what it delivers, the user asks for it now, or it needs no
+  reading (a fact already in your context: answer at once).
+- A new topic, anything larger: say in 1-2 sentences that it is new and costs the current context size (the last
+  `Heliotrop main context` notice's figure, else your estimate) on every turn. Offer three options: park it under the
+  roadmap's Later (`roadmap:`; no contract: list it in your reply), start a new session (`handover`), or switch focus.
 
-The user decides; carry out the choice, never refuse. A switch of focus goes into the session file's Decisions when
-there is one.
+The user decides; carry out the choice, never refuse. A switch goes into the session file's Decisions when there is one.
 
 ## Explaining
 

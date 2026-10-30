@@ -5,6 +5,23 @@
 that names the one it replaces; the old entry gets `Superseded by: <date> <title>`. Entries before 2026-10-30 were
 reconstructed from commit messages; their source is the commit. -->
 
+## 2026-10-30: Unrelated side requests are handled at the end of the session
+
+- Decision: in a session with a set focus, a side question, side task or decision unrelated to the focus is
+  acknowledged in one line and goes to Deferred, worked off before `end`; at once only when it blocks the work or
+  changes what it delivers, the user asks for it now, or it needs no reading. Narrows the 1.0 triage rule that answered
+  short side questions at once.
+- Reason: everything loaded mid-session is re-sent on every later turn, so unrelated work costs least at the end.
+- Source: [sessions/2026-10-30-command-center.md](sessions/2026-10-30-command-center.md)
+
+## 2026-10-30: The engine points the user to the roadmap
+
+- Decision: `init` creates the roadmap when a project has none; the guide after `init` and the closing message of
+  `end` and `handover` point to it in one line with a link.
+- Reason: the roadmap is the user's command center; the user should know where to follow progress without being
+  lectured.
+- Source: [sessions/2026-10-30-command-center.md](sessions/2026-10-30-command-center.md)
+
 ## 2026-10-30: Engine versioning: minor by default, major only for a redesign
 
 - Decision: patch for a fix that changes no rule; minor for every change to rules, skills, agents, hooks or the contract

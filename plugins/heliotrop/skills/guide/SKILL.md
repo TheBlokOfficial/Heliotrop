@@ -27,11 +27,14 @@ user did not ask about when they asked about one.
    Claude often waits for helpers longer than 5 minutes, so the 1-hour setting usually costs less; Claude offers to
    switch it on and changes settings only with the user's approval.
 6. Documents: the roadmap, <roadmap> (`roadmap:`, or a 1.0 `backlog:`; default docs/roadmap.md), is the user's main
-   file: where the project stands, what is done, what comes next and what waits for the user's decision; its language
-   is set by `write-doc` `## Language`. Each session
+   file: where the project stands, what is done, what comes next and what waits for the user's decision. Each session
    has a journal in <sessions>; lasting decisions go to <decisions>. A new session starts from the contract, the
    roadmap and the last session's next steps.
 7. The user's part: say what you want; answer the questions Claude asks (only decisions that are yours: direction,
-   risky or outward-facing steps); a new topic during the work gets three options: park it in the roadmap's Later
+   risky or outward-facing steps); an unrelated side question waits until the end of the session unless you ask for it
+   now; a new topic during the work gets three options: park it in the roadmap's Later
    section, start it in a new session, or switch to it here. Commands: `/heliotrop:end` closes a session,
    `/heliotrop:handover` moves the work to a new one, `/heliotrop:guide` shows this again.
+
+Run at the end of `init`, close with one sentence: the roadmap (a link to <roadmap>) is the place to follow progress,
+and Claude updates it at the end of every session.

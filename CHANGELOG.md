@@ -3,6 +3,17 @@
 <!-- Changes visible to users of the engine, newest version first. Versions before 1.0.0 (the `stack` plugin, 0.1.0 to
 0.8.0) are described in the git log. -->
 
+## 1.2.0 — 2026-10-30
+
+### Changed
+
+- The engine points the user to the roadmap: `init` creates it in a project that has none, the guide at the end of
+  `init` closes with a link to it as the place to follow progress, and the closing message of `end` and `handover`
+  says in one line that it was updated.
+- Triage: in a session with a set focus, an unrelated side question, side task or decision is acknowledged in one
+  line and handled at the end of the session (Deferred), where it costs least; done at once only when it blocks the
+  work, the user asks for it now, or it needs no reading.
+
 ## 1.1.0 — 2026-10-30
 
 Design: [docs/design/heliotrop-1.1.md](docs/design/heliotrop-1.1.md). A 1.0 contract keeps working unchanged.

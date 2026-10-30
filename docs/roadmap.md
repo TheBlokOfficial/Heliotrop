@@ -7,9 +7,9 @@ zwija się do jednej linii. -->
 
 ## Gdzie jesteśmy
 
-Heliotrop 1.1 jest wydany: roadmapa zastąpiła backlog jako centrum dowodzenia, dokumenty dla użytkownika mają własny
-język, a numer 2.0 jest zarezerwowany na przebudowę silnika. Następny krok: przeinstalowanie wtyczki i obserwacja
-silnika w prawdziwych sesjach.
+Heliotrop 1.2 jest wydany: roadmapa jest centrum dowodzenia w języku użytkownika, silnik subtelnie do niej odsyła,
+a sprawy poboczne niezwiązane z tematem sesji orkiestrator załatwia na jej końcu, gdzie kosztują najmniej. Następny
+krok: przeinstalowanie wtyczki i obserwacja silnika w prawdziwych sesjach.
 
 ## Czeka na Ciebie
 
@@ -21,6 +21,8 @@ silnika w prawdziwych sesjach.
 ### ✓ Heliotrop 1.0, gotowe 2026-10-30 ([sesja](sessions/2026-10-30-heliotrop-1.0.md))
 
 ### ✓ Heliotrop 1.1: roadmapa jako centrum dowodzenia, gotowe 2026-10-30 ([sesja](sessions/2026-10-30-command-center.md))
+
+### ✓ Heliotrop 1.2: odsyłanie do roadmapy, sprawy poboczne na koniec, gotowe 2026-10-30 ([sesja](sessions/2026-10-30-command-center.md))
 
 ### Wdrożenie
 

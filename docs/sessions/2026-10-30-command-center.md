@@ -20,6 +20,9 @@ versioning rule reserves the major number for a redesign. Out of scope: hooks, l
 - Repository: [roadmap.md](../roadmap.md) (Polish, from the backlog), contract `roadmap:` and `user documents:`,
   versioning rule, [decisions.md](../decisions.md), README, CHANGELOG and `plugin.json` 1.1.0, build zip.
 - Checks: `node tests/hooks/test.js` passes.
+- 1.2.0, one implementer slice: `init` creates the roadmap in a project without one; the guide after `init` and the
+  closing message of `end` and `handover` point to it; triage defers unrelated side requests to the end of the
+  session. Decisions in [decisions.md](../decisions.md).
 
 ## Decisions
 
@@ -41,6 +44,8 @@ versioning rule reserves the major number for a redesign. Out of scope: hooks, l
 - Version 1.1.0 for this change; 2.0 is reserved for a large redesign.
 - Roadmap replaces the backlog; user documents in the user's language, technical documents stay in English.
 - Build, commit and push at the end of the session without a separate sign-off.
+- 1.2.0: the engine encourages the user, subtly, to follow progress in the roadmap; unrelated side requests in a
+  focused session are handled at its end.
 
 ## Open
 
@@ -53,4 +58,4 @@ versioning rule reserves the major number for a redesign. Out of scope: hooks, l
 
 ## State
 
-- branch: main; uncommitted changes: no (released as 1.1.0 and pushed); checks: hook smoke test passes
+- branch: main; uncommitted changes: no (released as 1.1.0 and 1.2.0, pushed); checks: hook smoke test passes

@@ -74,7 +74,10 @@ it is for, when it is updated and by whom. You plan, judge and ask; the reading 
    documentation problems with their fixes; the agent configuration list (moves into the contract / covered by the
    engine, to be removed / stays); for a migration, the contract diff and the roadmap and register entries from step 2.
 8. After the user approves: write `.claude/project.md` from the template, or apply the approved diff; write the
-   migrated roadmap and register entries; reduce CLAUDE.md to a few facts about the project and the line
+   migrated roadmap and register entries. A project with no roadmap (a fresh one): create it from the `write-doc`
+   template `roadmap.md`: Where we are from the audit and the setup, Waiting for you from the setup decisions still
+   open, the stages empty or from the goal the user stated. An existing or migrated roadmap is not replaced. Reduce
+   CLAUDE.md to a few facts about the project and the line
    `Project contract: .claude/project.md`. Delete, move, merge or rewrite documents and agent configuration only as
    approved; restructuring runs as `heliotrop:doc-writer` slices, one document per slice.
 9. Prompt cache check (orchestrator rules, "Prompt cache"): with one shell command print the environment variables
