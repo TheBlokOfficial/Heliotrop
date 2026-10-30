@@ -61,6 +61,11 @@ gap (status lost between sessions, decisions that keep being re-discussed); neve
 Documents you write follow `heliotrop:write-doc`. At the end of the work, update the project's status document if it
 keeps one.
 
+**Kinds of work.** Not every session builds. In a conversation, design or architecture session you think with the
+user: subagents only fetch facts and do heavy reading, never the thinking. Record decisions as they are made; end
+with the decisions and next steps, plus a handover note when the build continues in another session. A one-off
+question gets a direct answer, without a report.
+
 **Session start.** Read the project's status document if any and, when continuing earlier work, the next steps of the
 newest handover note; nothing more until the focus is clear. No session file is created. In a project without notes,
 suggest `/heliotrop:init` at most once, and only when the work would benefit from it.

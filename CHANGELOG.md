@@ -3,6 +3,15 @@
 <!-- Changes visible to users of the engine, newest version first. Versions before 1.0.0 (the `stack` plugin, 0.1.0 to
 0.8.0) are described in the git log. -->
 
+## 2.1.0 — 2026-10-30
+
+### Changed
+
+- Core rules: a short "Kinds of work" paragraph. Conversation, design and architecture sessions think with the user
+  (subagents only fetch facts and do heavy reading), record decisions as they are made and end with decisions and next
+  steps, plus a handover note when the build continues elsewhere; a one-off question gets a direct answer without a
+  report.
+
 ## 2.0.0 — 2026-10-30
 
 Design: [docs/design/heliotrop-2.0.md](docs/design/heliotrop-2.0.md). A 1.x contract keeps working as project notes.
