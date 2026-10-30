@@ -3,6 +3,17 @@
 <!-- Changes visible to users of the engine, newest version first. Versions before 1.0.0 (the `stack` plugin, 0.1.0 to
 0.8.0) are described in the git log. -->
 
+## Unreleased
+
+### Added
+
+- `build.ps1` packs the plugin into `build/heliotrop-<version>.zip` (plugin at the zip root); the zip for 1.0.0 is
+  committed.
+
+### Changed
+
+- Repository renamed to `TheBlokOfficial/Heliotrop`; local folder `Heliotrop`.
+
 ## 1.0.0 — 2026-10-30
 
 Redesign of the `stack` plugin (0.8.0) as Heliotrop. Design: [docs/design/heliotrop-1.0.md](docs/design/heliotrop-1.0.md).

@@ -5,8 +5,6 @@ A Claude Code marketplace with one plugin, `heliotrop`: a project-agnostic orche
 and execution, so the main context stays small. Everything that differs between projects lives in each repository's
 contract, `.claude/project.md`; the engine never contains a project's paths, commands or documents.
 
-The repository folder keeps its old name, `agent-stack`.
-
 ## How it works
 
 | Area | Behaviour | Rule |
@@ -32,6 +30,8 @@ plugins/heliotrop/
   skills/                             see Skills
   hooks/                              SessionStart, PostToolUse and Stop hooks (Node.js)
 tests/hooks/test.js                   hook smoke test on synthetic input
+build.ps1                             packs the plugin into build/
+build/heliotrop-<version>.zip         packed plugin, rebuilt with every release
 docs/                                 design notes, decision register, backlog
 ```
 
@@ -98,6 +98,20 @@ subagents longer than 5 minutes, and a plugin cannot set the main session's cach
 
 The marketplace is a local directory, so the plugin runs in place: edits take effect at the next session start or
 after `/reload-plugins`. Onboard a project with `/heliotrop:init`.
+
+## Build
+
+`build/heliotrop-<version>.zip` holds the plugin with `.claude-plugin/plugin.json` at the zip root, for installs that
+take a plugin archive instead of a marketplace. Rebuild it after a change to `plugins/heliotrop/` and commit it with the
+release:
+
+```
+powershell -NoProfile -ExecutionPolicy Bypass -File build.ps1
+```
+
+The version comes from `plugin.json`; older zips in `build/` are removed. The script packs git-tracked and untracked,
+non-ignored files from the working tree, with forward-slash paths and a fixed timestamp, so unchanged content gives an
+identical zip.
 
 ## Changing the engine
 
