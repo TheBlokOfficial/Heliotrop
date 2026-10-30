@@ -1,12 +1,12 @@
 {
-  "name": "agent-stack",
+  "name": "heliotrop",
   "owner": { "name": "TheBlok" },
-  "description": "Personal agent workflow engine for Claude Code, shared by all projects.",
+  "description": "Heliotrop: personal orchestrator workflow engine for Claude Code, shared by all projects.",
   "plugins": [
     {
-      "name": "stack",
-      "source": "./plugins/stack",
-      "description": "Project-agnostic agent workflow engine driven by a per-project contract."
+      "name": "heliotrop",
+      "source": "./plugins/heliotrop",
+      "description": "Project-agnostic orchestrator workflow driven by a per-project contract."
     }
   ]
 }

@@ -1,93 +1,106 @@
-# agent-stack
+# Heliotrop
 
-A Claude Code marketplace with one plugin, `stack`: a project-agnostic agent workflow engine. The engine holds the
-workflow (orchestrator rules, subagents, skills, hooks). Everything that differs between projects lives in each
-repository's contract, `.claude/project.md`. The engine never contains a project's paths, commands or document types.
+A Claude Code marketplace with one plugin, `heliotrop`: a project-agnostic orchestrator workflow. The main session
+(the orchestrator) works with the user: it takes decisions, writes briefs and judges results. Subagents do the reading
+and execution, so the main context stays small. Everything that differs between projects lives in each repository's
+contract, `.claude/project.md`; the engine never contains a project's paths, commands or documents.
+
+The repository folder keeps its old name, `agent-stack`.
+
+## How it works
+
+| Area | Behaviour | Rule |
+|---|---|---|
+| Roles | User: direction and decisions. Orchestrator: plans, delegates, decides, integrates. Subagents: one slice each, from a brief, with a short return. | `core/orchestrator.md` |
+| Session kinds | `build`, `design`, `talk`, `research`, `debug`, `review`, inferred from the request and never asked; the kind sets the session file, the delegation and the end-report sections. | `## Session` |
+| Triage | Every message during work is in focus, a side question or a new topic; a new topic gets its cost here and three options: backlog, new session (`handover`), switch focus. | `## Triage` |
+| Explaining | Consequences the user likely does not see (cost, risk, conflict with a decision, a better alternative) are stated in 1-3 sentences with a recommendation; contract `guidance: explain \| brief`. | `## Explaining` |
+| Main context | Notices at 150k (reading moves to subagents) and 200k (hard point: `handover`), then every further 50k; contract `main-context:`. | `## Budgets` |
+| Slice budget | Each subagent is told at 80% of `context-budget:` (default 100k), at 100% and every further 20%. | `## Budgets` |
+| Prompt cache | One notice when the main session writes the cache with a 5-minute TTL; the orchestrator offers `"promptCacheTtl": "1h"` in user settings. | `## Budgets` |
+| Documents | Session journal `docs/sessions/`, decision register `docs/decisions.md`, backlog `docs/backlog.md`; paths and other documents in the contract's `## Documents`. | `## Documents` |
+| Light mode | Without a contract: triage, explaining and the context and cache notices only; no session files, no archive. | `hooks/session-start.js` |
 
 ## Layout
 
 ```
-.claude-plugin/marketplace.json     marketplace "agent-stack"
-plugins/stack/
+.claude-plugin/marketplace.json       marketplace "heliotrop"
+plugins/heliotrop/
   .claude-plugin/plugin.json
-  core/orchestrator.md              orchestrator rules, injected at session start
-  agents/                           researcher, implementer, test-writer, reviewer, doc-writer, verifier
-  skills/plan, end, init            orchestrator procedures (/stack:plan, /stack:end, /stack:init)
-  skills/write-doc                  document rules, preloaded into doc-writer, loaded by the orchestrator
-  skills/protocol                   subagent protocol, preloaded into every stack agent
-  skills/init/contract-template.md  contract template
-  skills/end/report-template.md     session report template
-  hooks/                            SessionStart, PostToolUse and Stop hooks (Node.js)
+  core/orchestrator.md                orchestrator rules, injected at session start
+  agents/                             researcher, implementer, test-writer, reviewer, doc-writer, verifier
+  skills/                             see Skills
+  hooks/                              SessionStart, PostToolUse and Stop hooks (Node.js)
+tests/hooks/test.js                   hook smoke test on synthetic input
+docs/                                 design notes, decision register, backlog
 ```
 
-## Behaviour
+## Skills
 
-- **SessionStart hook.** In a project with `.claude/project.md` it injects `core/orchestrator.md`: the orchestrator
-  as the session's manager, session scope, start and end reports, the three communication modes, the decision rule,
-  the brief and return formats, and the slice-size rules (including when a code map precedes a large implementation). The rules are defaults the orchestrator may deviate from
-  with a reason in the decision log; user decisions and the contract are not. Without a contract it injects one line
-  saying that the workflow is off.
-- **PostToolUse hook (Edit, Write).** Runs the contract's `on-edit:` command with `{file}` replaced by the edited path,
-  using PowerShell on Windows and `/bin/sh` elsewhere. A failure is reported back to Claude. No `on-edit:` line, or
-  `none`, means nothing runs. The full `check` is run by the verifier, not after every edit.
-- **PostToolUse hook (every tool, subagents only).** Reads the subagent's own transcript and tells it its context size
-  next to the tool result: once at 80% of the slice budget (estimate what is left; return `partial` now when it is
-  more than ~6 tool calls), once at the budget (wrap up and return `partial`, except that the build, tests and commit
-  of finished work may still run), then again every further 20% (stop now). The budget is ~100k tokens, or the
-  contract's `context-budget: <tokens>`.
-  The main thread is never told; nothing runs without a contract.
-- **Stop hook.** In a project with a contract it copies the session's transcripts (main and subagents) to
-  `~/.claude/stack-archive/`, so the diagnostics outlive the client deleting them.
-- **Session reports** go to the contract's sessions directory (default `docs/sessions/YYYY-MM-DD-topic.md`). The next
-  session starts by reading the contract and the newest report.
+| Skill | Use |
+|---|---|
+| `/heliotrop:init` | Set Heliotrop up in a repository (audit of existing docs, contract, cache TTL check), or review or migrate a contract. |
+| `/heliotrop:plan` | Break a task into stages and slices with ready briefs. |
+| `/heliotrop:end` | Close a session: session file, decision register, backlog, contract's end steps. |
+| `/heliotrop:handover` | Hand the work over to a fresh session (state, Next briefs, backlog, how to resume). |
+| `/heliotrop:guide` | Explain how Heliotrop works in this project, with the contract's values. |
+| `heliotrop:write-doc` | Document rules; engine templates in `skills/write-doc/templates/`: `decisions`, `backlog`, `architecture`, `spec`, `adr`, `changelog`, `research-note`. |
+| `heliotrop:protocol` | Subagent protocol, preloaded into every Heliotrop agent. |
 
-| Agent | Model | Tools | Role |
-|---|---|---|---|
-| `stack:researcher` | haiku | Read, Grep, Glob, WebSearch, WebFetch, Write, Edit | search and heavy reading; writes research notes only |
-| `stack:implementer` | sonnet | Read, Edit, Write, Grep, Glob, Bash, PowerShell | one scoped change plus its checks |
-| `stack:test-writer` | sonnet | Read, Edit, Write, Grep, Glob, Bash, PowerShell | tests for a finished slice from its specification; reports defects |
-| `stack:reviewer` | opus | Read, Grep, Glob, Write, Bash, PowerShell | review of diffs and designs; writes only its report |
-| `stack:doc-writer` | sonnet | Read, Write, Edit, Grep, Glob | documents per the contract's types and templates |
-| `stack:verifier` | haiku | Read, Grep, Glob, Bash, PowerShell | runs checks or a checklist, reports the outcome |
+Templates of the engine itself: `skills/init/contract-template.md` (contract), `skills/end/report-template.md` (session
+file).
 
-`Bash` and `PowerShell` are both listed so the agents work on any platform; only the one that exists resolves.
-A contract may override a model in its `Agents` section; the orchestrator passes the override on the call.
+## Hooks
+
+| Hook | Does |
+|---|---|
+| SessionStart | Injects the orchestrator rules and the session file template path (contract) or the light core (no contract); resets the main-context notices after a compaction; deletes budget state older than 7 days. |
+| PostToolUse, Edit/Write | Runs the contract's `on-edit:` command for the edited file; a failure is reported back. |
+| PostToolUse, every tool | Main-context, slice-budget and prompt-cache notices (`Heliotrop main context`, `Heliotrop context budget`, `Heliotrop cache`). |
+| Stop | With a contract, copies the session's transcripts to `~/.claude/heliotrop-archive/`. |
+
+## Agents
+
+| Agent | Model | Role |
+|---|---|---|
+| `heliotrop:researcher` | haiku | search and heavy reading; writes research notes and code maps only |
+| `heliotrop:implementer` | sonnet | one scoped change plus its checks |
+| `heliotrop:test-writer` | sonnet | tests for a finished slice from its specification; reports defects |
+| `heliotrop:reviewer` | opus | review of diffs and designs; writes only its report |
+| `heliotrop:doc-writer` | sonnet | documents per the contract's `## Documents` and templates |
+| `heliotrop:verifier` | haiku | runs checks or a checklist, reports the outcome |
+
+A contract may override a model in its `## Agents` section.
 
 ## Install
 
-Requirements: Claude Code and Node.js on `PATH` (for the hooks). The hooks declare `"shell": "powershell"` (Windows
-without Git Bash); on macOS or Linux, remove that field from `plugins/stack/hooks/hooks.json`.
+Requirements: Claude Code and Node.js on `PATH`.
 
 ```
-claude plugin marketplace add D:\Projekty\agent-stack
-claude plugin install stack@agent-stack --scope user
+claude plugin marketplace add <path to this repository>
+claude plugin install heliotrop@heliotrop --scope user
 ```
 
-The marketplace is a local directory, so the plugin loads in place: edits take effect at the next session start or
-after `/reload-plugins`, with no reinstall and no version bump. Bump `version` in `plugin.json` when a change alters
-behaviour, and describe it in the commit message.
-
-Onboard a project with `/stack:init`, which writes `.claude/project.md` from the template.
-
-## Diagnosing the engine
-
-The engine is measured on real sessions of the projects that use it, from this repository only (nothing of it is
-part of the plugin):
+Reinstall from the old `stack` plugin (0.x):
 
 ```
-tools/session-metrics/session_metrics.ps1   metrics from Claude Code transcripts of any project (-Project <path>)
-.claude/agents/doctor.md                    project agent: records pending sessions, examines the costliest
-                                            agents and briefs, writes a report; changes nothing else
-diagnostics/                                sessions.csv, agents.csv and the doctor's reports
+claude plugin uninstall stack@agent-stack
+claude plugin marketplace remove agent-stack
+claude plugin marketplace add <path to this repository>
+claude plugin install heliotrop@heliotrop --scope user
 ```
 
-In a session here, ask for the pending sessions of a project to be examined; the doctor's report is the input for
-engine changes, which are made and versioned as usual. Columns and limits: [diagnostics/README.md](diagnostics/README.md).
+In a project with a 0.x contract, run `/heliotrop:init`: it offers to migrate the contract.
+
+Recommended user setting in `~/.claude/settings.json`: `"promptCacheTtl": "1h"`. The orchestrator often waits on
+subagents longer than 5 minutes, and a plugin cannot set the main session's cache TTL (orchestrator rules,
+`### Prompt cache`).
+
+The marketplace is a local directory, so the plugin runs in place: edits take effect at the next session start or
+after `/reload-plugins`. Onboard a project with `/heliotrop:init`.
 
 ## Changing the engine
 
-- Nothing project-specific: if a change needs a project's path, command, document type or rule, it belongs in that
-  project's contract, and the engine gets at most a generic hook for it.
-- The contract's headings are an interface read by the skills, agents and hooks. Renaming or removing one means
-  updating the engine and every contract.
-- Keep the pool small. Every agent and skill description costs context in every session.
+The rules for working on this repository are in its own contract, [.claude/project.md](.claude/project.md). Changes
+are listed in [CHANGELOG.md](CHANGELOG.md), lasting decisions in [docs/decisions.md](docs/decisions.md), open work in
+[docs/backlog.md](docs/backlog.md).
