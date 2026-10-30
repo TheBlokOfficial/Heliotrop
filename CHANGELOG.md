@@ -7,7 +7,7 @@
 
 ### Added
 
-- `build.ps1` packs the plugin into `build/heliotrop-<version>.zip` (plugin at the zip root); the zip for 1.0.0 is
+- `build.bat` (wrapper for `build.ps1`) packs the plugin into `build/heliotrop-<version>.zip` (plugin at the zip root); the zip for 1.0.0 is
   committed.
 
 ### Changed

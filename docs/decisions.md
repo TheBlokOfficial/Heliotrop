@@ -8,8 +8,8 @@ reconstructed from commit messages; their source is the commit. -->
 ## 2026-10-30: Repository and folder named Heliotrop, packed plugin in build/
 
 - Decision: the GitHub repository is `TheBlokOfficial/Heliotrop` (was `agent-stack`; the earlier repository of that
-  name, the Witcher 3 mod, is now `Heliotrop-W3`) and the local folder is `D:\Projekty\Heliotrop`. `build.ps1` packs
-  `plugins/heliotrop/` into `build/heliotrop-<version>.zip`, committed with each release. Replaces the folder part of
+  name, the Witcher 3 mod, is now `Heliotrop-W3`) and the local folder is `D:\Projekty\Heliotrop`. `build.bat` (wrapper for
+  `build.ps1`) packs `plugins/heliotrop/` into `build/heliotrop-<version>.zip`, committed with each release. Replaces the folder part of
   "Name Heliotrop, version 1.0.0".
 - Reason: one name for the plugin, marketplace, repository and folder; a ready archive for installs without a
   marketplace.
