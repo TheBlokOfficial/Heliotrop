@@ -1,9 +1,10 @@
 // Stop: keep a copy of the session's transcripts for later analysis, because the desktop app may delete them later.
-// Only in projects with project notes. Never fails the session: silent, always exit 0.
+// Only in projects with a contract. Never fails the session: silent, always exit 0.
 'use strict';
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const c = require('./common');
 
 // Copies src to dst unless dst already has the same size and mtime.
 function copyIfChanged(src, dst) {
@@ -18,8 +19,7 @@ function copyIfChanged(src, dst) {
 }
 
 function run(input) {
-  const projectDir = process.env.CLAUDE_PROJECT_DIR || input.cwd || process.cwd();
-  if (!fs.existsSync(path.join(projectDir, '.claude', 'project.md'))) return;
+  if (!c.findProjectDir(c.startDir(input))) return;
   if (!input.transcript_path || !fs.existsSync(input.transcript_path)) return;
 
   const srcDir = path.dirname(input.transcript_path);

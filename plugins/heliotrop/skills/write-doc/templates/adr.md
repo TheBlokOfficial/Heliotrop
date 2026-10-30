@@ -1,8 +1,7 @@
 # <NNNN>. <decision in a few words>
 
-<!-- Optional suggestion: architecture decision record, one file per decision with options worth recording. Language:
-`write-doc` `## Language`. Never rewritten after acceptance; a changed decision gets a new record and the old one's status
-becomes `superseded by <NNNN>`. -->
+<!-- Architecture decision record: one file per decision with options worth recording. Never rewritten after
+acceptance; a changed decision gets a new record and the old one's status becomes `superseded by <NNNN>`. -->
 
 - Status: proposed | accepted | superseded by <NNNN>
 - Date: <YYYY-MM-DD>

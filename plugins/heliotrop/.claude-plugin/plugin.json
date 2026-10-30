@@ -1,6 +1,6 @@
 {
   "name": "heliotrop",
-  "version": "2.1.0",
-  "description": "Project-agnostic orchestrator workflow for Claude Code: the main session plans, decides and talks with the user while subagents read and execute; a short core of four hard rules plus guidance, context and cache notices, and optional project notes in .claude/project.md.",
+  "version": "3.0.0",
+  "description": "Project-agnostic orchestrator workflow for Claude Code: the main session plans, decides and talks with the user while subagents read and execute; a short core of hard rules including a quality floor, context notices, a per-project contract in .claude/contract.md and a CLAUDE.md block.",
   "author": { "name": "TheBlok" }
 }

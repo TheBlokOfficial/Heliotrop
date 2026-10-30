@@ -1,21 +1,23 @@
 # Roadmapa
 
 <!-- Centrum dowodzenia projektu: stan, co czeka na decyzję, etapy z krokami, pomysły na później, znane problemy.
-Pisana po polsku (notatki projektu). Aktualizują ją `end` i `handover` (krok 2 skilla `end`): zrobiony krok jest
+Pisana po polsku (reguła językowa w `CLAUDE.md`). Aktualizują ją `end` i `handover` (krok 2 skilla `end`): zrobiony krok jest
 odhaczany, nie usuwany; zakończony etap zwija się do jednej linii. -->
 
 ## Gdzie jesteśmy
 
-Heliotrop 2.0 jest zbudowany i zrecenzowany: krótki rdzeń z czterema twardymi regułami (punkty kontekstu 150k/200k,
-budżet subagenta, decyzje użytkownika, rozłączne pliki agentów piszących) i wskazówkami zamiast procedury. Notatki o
-projekcie (opcjonalne) zastępują kontrakt, a `init` rozpoznaje projekt i pyta tylko o to, czego nie widać. Następny
-krok: przeinstalowanie wtyczki i obserwacja wersji 2.0 w prawdziwych sesjach.
+Wersje 2.0 i 2.1 są gotowe i zatwierdzone (commity). Wersja 3.0 jest zbudowana w tej sesji i czeka na zatwierdzenie
+(zmiany niezatwierdzone): kontrakt `.claude/contract.md` zamiast notatek o projekcie, blok w `CLAUDE.md`, strażnik
+(bez kontraktu hooki milczą), poprzeczka jakości jako twarda reguła, liczby w jednym miejscu (`hooks/common.js`),
+`init` proponuje zestaw dokumentów. Usunięte: skill `guide`, komunikat o cache, reguła o dwóch agentach piszących.
+Repozytorium zostało przeniesione na własny kontrakt i `CLAUDE.md`. Następny krok: obserwacja wersji 3.0 w prawdziwych
+projektach, w tym migracja istniejących projektów z 2.x przez `/heliotrop:init`.
 
 ## Czeka na Ciebie
 
-- Przeinstalowanie wtyczki: odinstalować `stack@agent-stack`, zainstalować `heliotrop@heliotrop`
-  ([README](../README.md)). Do tego czasu sesje działają na hookach 0.x.
-- Zatwierdzenie (commit) zmiany 2.0: nie jest jeszcze zatwierdzona.
+- Zatwierdzenie (commit) wersji 3.0: zbudowana, nie jest jeszcze zatwierdzona. Po
+  zatwierdzeniu: przebudowanie archiwum `build/` (`build.bat`).
+- Przeinstalowanie wtyczki z wersji 3.0 (README).
 
 ## Etapy
 
@@ -27,15 +29,28 @@ krok: przeinstalowanie wtyczki i obserwacja wersji 2.0 w prawdziwych sesjach.
 
 ### ✓ Heliotrop 2.0: krótki, organiczny silnik, gotowe 2026-10-30 ([notatka projektowa](design/heliotrop-2.0.md))
 
+### ✓ Heliotrop 2.1: rodzaje pracy w rdzeniu, gotowe 2026-10-30
+
+### Heliotrop 3.0: kontrakt, strażnik, poprzeczka jakości
+
+Zbudowana, czeka na zatwierdzenie. Decyzje: [rejestr](decisions.md); notatki projektowej nie ma.
+
+- [x] Kontrakt `.claude/contract.md` ze stałym szkieletem, blok w `CLAUDE.md`, strażnik, poprzeczka jakości.
+- [x] Liczby w `hooks/common.js` i podstawianie w regułach; usunięcie `guide`, komunikatu o cache i reguły o dwóch
+  agentach.
+- [x] Migracja tego repozytorium: `.claude/contract.md` i `CLAUDE.md` (plik `.claude/project.md` do usunięcia po
+  zatwierdzeniu).
+- [ ] Zatwierdzenie i commit (patrz Czeka na Ciebie).
+
 ### Wdrożenie
 
 Silnik działa w prawdziwych sesjach, a jego zachowanie jest sprawdzone w praktyce.
 
 - [ ] Przeinstalowanie wtyczki (patrz Czeka na Ciebie).
 - [ ] Sprawdzenie, czy żadna inna wtyczka Claude Code nie nazywa się `heliotrop`.
-- [ ] Pierwszy prawdziwy projekt przechodzi przez `/heliotrop:init` (kontrakt 1.x zamieniony na notatki), a jego
-  sesje są obserwowane pod kątem: punktów kontekstu, komunikatu o cache, reakcji na zmiany tematu, raportu końcowego
-  i notatki przekazania.
+- [ ] Pierwszy prawdziwy projekt (z notatkami 2.x lub kontraktem 1.x) przechodzi przez `/heliotrop:init`, a jego sesje
+  są obserwowane pod kątem: punktów kontekstu, poprzeczki jakości, zachowania strażnika, bloku w `CLAUDE.md` w
+  subagentach, raportu końcowego i notatki przekazania.
 
 ### Pomiar
 

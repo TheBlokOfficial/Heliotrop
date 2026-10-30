@@ -1,7 +1,7 @@
 # Changelog
 
-<!-- Optional suggestion: changes visible to users of the project, newest version first. Language: `write-doc`
-`## Language`. One entry per release; unreleased changes collect under Unreleased. Omit empty groups. -->
+<!-- Changes visible to users of the project, newest version first. One entry per release; unreleased changes collect
+under Unreleased. Omit empty groups. -->
 
 ## Unreleased
 

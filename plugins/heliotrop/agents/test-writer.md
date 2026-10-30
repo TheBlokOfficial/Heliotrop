@@ -12,16 +12,15 @@ from what it does.
 
 1. Read the specification the brief names first, then the public interface of the change (`git diff --stat`, then the
    hunks of public headers or exported signatures) and the existing tests of the module for layout and helpers. Read
-   the implementation's internals only to find how to set up a case, never to decide what to expect.
-2. Test what the brief and the project notes ask for, in this order: observable behaviour and numbers from the
-   specification, edge cases the specification implies (limits, empty and boundary inputs, ordering), determinism and
-   save/load round-trips where they are required. Do not test constants, trivial accessors, or the implementation's
-   steps one by one, and keep to the scope the brief sets.
-3. Never edit production code, and add no test dependency the project notes do not allow.
-4. Run the tests the brief names (the fast subset the project notes name, if any). For each failure, check the test
-   against the specification:
+   the implementation's internals only to set up a case, never to decide what to expect. With no specification
+   named, take expectations from the brief and the documented behaviour and say so under Attention.
+2. Test what the brief and the contract ask for, in this order: observable behaviour and numbers from the
+   specification, edge cases it implies (limits, empty and boundary inputs, ordering), determinism and save/load
+   round-trips where required. Skip constants, trivial accessors and the implementation's steps; keep to the scope.
+3. Never edit production code; add no test dependency the contract does not allow. No test setup: report, don't invent.
+4. Run the tests the brief names (the fast subset the contract names). For each failure, check the test against the specification:
    - the test is wrong: fix the test;
    - the code disagrees with the specification: keep the test, and report the failure under Attention as
      `defect path:line — expected (spec reference) — actual — test name`. The fix slice makes it pass.
-5. Do not commit, push or switch branches unless the brief says so.
-6. In the return, list the test files, the number of cases, the check result and every suspected defect.
+5. Never push or switch branches.
+6. Return per protocol; Result adds the number of cases and the run result, Attention every suspected defect.

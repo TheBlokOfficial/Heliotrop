@@ -5,6 +5,98 @@
 that names the one it replaces; the old entry gets `Superseded by: <date> <title>`. Entries before 2026-10-30 were
 reconstructed from commit messages; their source is the commit. -->
 
+## 2026-10-30: 3.0 is built without a design note
+
+- Decision: engine 3.0 is built from a shared specification carried in the briefs, with no note in `docs/design/`; the
+  decisions are recorded in this register and the changes in the CHANGELOG. Narrows the practice of one design note per
+  larger change.
+- Reason: a design note costs a session of its own, and the briefs can carry the specification of a change whose
+  decisions are already taken.
+- Source: user decision, 2026-10-30
+
+## 2026-10-30: Init proposes the standard document set
+
+- Decision: `init` proposes `docs/roadmap.md` (status) and `docs/sessions/` (handover notes), mapping an equivalent
+  document the project already has instead of creating a duplicate. The decision register stays optional: mapped if
+  the project keeps one, created later when the work needs it. The paths go into the contract `## Documents`.
+- Reason: a status document and handover notes are what a fresh session needs to resume; a register pays off only once
+  decisions accumulate.
+- Source: [CHANGELOG](../CHANGELOG.md), 3.0.0
+- Supersedes in part: 2026-10-30 Init orients and asks (documents only for a real gap)
+
+## 2026-10-30: Removed in 3.0: guide, prompt-cache notice, two-writers rule
+
+- Decision: removed: the `guide` skill (the agent answers questions about the engine directly); the prompt-cache notice
+  with its hook code, state field and tests (the README keeps a one-line tip for `"promptCacheTtl": "1h"`); the hard
+  rule that two writing agents never touch the same files (the Slices guidance already keeps parallel slices on
+  disjoint files). Engine-repo specifics leave the generic skills.
+- Reason: the guide duplicated what the agent can explain; the cache notice has no effect once the TTL is set and is a
+  pure add-on; the two-writers rule had no recorded reason and duplicated Slices.
+- Source: [CHANGELOG](../CHANGELOG.md), 3.0.0
+- Supersedes in part: 2026-10-30 Prompt-cache TTL notice; 2026-10-30 Hard rules only where they prevent real harm
+  (the fourth rule); 2026-10-30 The engine points the user to the roadmap (the guide after `init`)
+
+## 2026-10-30: Numbers have one source
+
+- Decision: the engine's numbers (subagent budget, main-context points, reminder step, warning share, state age) are
+  constants only in `plugins/heliotrop/hooks/common.js`; the tests import them. `session-start.js` fills the
+  placeholders `{{context-budget}}`, `{{main-notice}}`, `{{main-hard}}` and `{{main-remind}}` in the orchestrator rules
+  with the values in effect for the project. No other engine file states them. Notice prefixes drop the engine name
+  (`Context budget:`, `Main context:`, `On-edit check failed for`).
+- Reason: a number stated in several files drifts apart; the substitution keeps the rules and the hooks consistent
+  with contract overrides.
+- Source: [CHANGELOG](../CHANGELOG.md), 3.0.0
+
+## 2026-10-30: CLAUDE.md block and a text-only engine boundary
+
+- Decision: `init` manages a block between `<!-- engine:begin -->` and `<!-- engine:end -->` in the project's root
+  `CLAUDE.md`: project and layout, language, conventions, always/never, and a fixed engine-boundary paragraph (the
+  engine is tooling, not the project; its name stays out of the project's files; its own files are not edited;
+  problems are reported to the user). `init` creates the file if missing and never touches text outside the markers.
+  The boundary is a textual warning only; no hook blocks edits.
+- Reason: Claude Code loads CLAUDE.md into the main session and into custom subagents, but not into the built-in
+  Explore and Plan agents, so project facts every agent needs belong there. A blocking hook was not adopted.
+- Source: user decision, 2026-10-30
+- Supersedes in part: 2026-10-30 Init orients and asks (the pointer line in CLAUDE.md)
+
+## 2026-10-30: Quality floor as a hard rule
+
+- Decision: the orchestrator's hard rules hold a quality floor: a change to behaviour is verified by running something
+  or reported as "not verified" with the reason; a larger change gets a review slice by an agent that did not write it;
+  changed behaviour gets tests where a test setup exists (otherwise one proposal to the user); no check is weakened,
+  skipped or rewritten to pass. Only the user lowers the floor, recorded with the reason in the contract `## Quality`;
+  stricter bars need no approval. The implementer reports "not verified"; the verifier without defined checks reports
+  `NO CHECKS`, never PASS.
+- Reason: without a floor, quality depended on whatever the project notes happened to say, and an agent that cannot run
+  a check could still report success.
+- Source: [CHANGELOG](../CHANGELOG.md), 3.0.0
+- Supersedes in part: 2026-10-30 Hard rules only where they prevent real harm (the set of hard rules)
+
+## 2026-10-30: Guard by contract presence
+
+- Decision: the existence of `.claude/contract.md` (nearest from the session directory upwards) is the initialisation
+  marker. Without it every hook does nothing and prints nothing (no rules, notices, on-edit check or archive), and
+  `end` and `handover` say the engine is not set up; `init` always works. The one exception is `.claude/project.md`
+  without a contract: session-start emits a single line that the engine is inactive until `/heliotrop:init` migrates
+  the notes.
+- Reason: an engine that injects its rules into every project, set up or not, acts where nobody asked for it; the
+  legacy line keeps 2.x projects from going silent without a trace.
+- Source: [CHANGELOG](../CHANGELOG.md), 3.0.0
+- Supersedes: 2026-10-30 The core loads in every session
+
+## 2026-10-30: Contract with an engine-owned skeleton
+
+- Decision: `.claude/contract.md` replaces the project notes `.claude/project.md`. The headings (Workflow, Quality,
+  Checks, Documents, User decisions, Overrides, Notes) and their order belong to the engine, each with a one-line
+  comment; the content belongs to the project and empty sections may stay empty. The hook keys `context-budget:`,
+  `main-context:` and `on-edit:` keep their names and are read anywhere in the file. Default values are never written
+  into a contract, so they do not freeze per project; Overrides holds only real deviations. The contract is injected
+  at session start; subagents read it themselves. Major version 3.0.0, because 2.x projects need `/heliotrop:init`.
+- Reason: free-form 2.x notes gave neither the project nor the agents a frame to rely on; the 1.x contract was too
+  costly, and this skeleton is short and freezes no values.
+- Source: [CHANGELOG](../CHANGELOG.md), 3.0.0
+- Supersedes: 2026-10-30 Project notes replace the contract
+
 ## 2026-10-30: Hard rules only where they prevent real harm
 
 - Decision: the core holds four hard rules: main-context points (150k: hand reading to subagents; 200k: no new agents,
@@ -14,6 +106,8 @@ reconstructed from commit messages; their source is the commit. -->
 - Reason: 1.x wrote procedure as rules, so sessions paid for ceremony instead of judgment; a rule that cannot be
   applied to an unusual case without its reason belongs in guidance.
 - Source: [design/heliotrop-2.0.md](design/heliotrop-2.0.md), sections Hard rules and Guidance
+- Superseded in part by: 2026-10-30 Quality floor as a hard rule (the set of hard rules); 2026-10-30 Removed in 3.0:
+  guide, prompt-cache notice, two-writers rule (the fourth rule)
 
 ## 2026-10-30: Project notes replace the contract
 
@@ -26,6 +120,7 @@ reconstructed from commit messages; their source is the commit. -->
 - Source: [design/heliotrop-2.0.md](design/heliotrop-2.0.md), section Project notes and Resolved questions 1
 - Supersedes in part: 2026-10-30 Light mode without a contract; 2026-10-21 Project specifics only in the contract
   (the place stays `.claude/project.md`, the required structure goes)
+- Superseded by: 2026-10-30 Contract with an engine-owned skeleton
 
 ## 2026-10-30: Init orients and asks
 
@@ -36,6 +131,8 @@ reconstructed from commit messages; their source is the commit. -->
   one-time rewrite as notes, keeping its content. Replaces the documentation audit.
 - Reason: a fixed document set and an audit cost every project the same effort, whether or not it had the gap.
 - Source: [design/heliotrop-2.0.md](design/heliotrop-2.0.md), section Init
+- Superseded in part by: 2026-10-30 CLAUDE.md block and a text-only engine boundary (the pointer line); 2026-10-30
+  Init proposes the standard document set (documents only for a real gap)
 
 ## 2026-10-30: Concepts removed in 2.0
 
@@ -64,6 +161,7 @@ reconstructed from commit messages; their source is the commit. -->
   budgets.
 - Source: [design/heliotrop-2.0.md](design/heliotrop-2.0.md), sections Removed concepts and Resolved questions 4
 - Supersedes: 2026-10-30 Light mode without a contract
+- Superseded by: 2026-10-30 Guard by contract presence
 
 ## 2026-10-30: Unrelated side requests are handled at the end of the session
 
@@ -82,6 +180,7 @@ reconstructed from commit messages; their source is the commit. -->
 - Reason: the roadmap is the user's command center; the user should know where to follow progress without being
   lectured.
 - Source: [sessions/2026-10-30-command-center.md](sessions/2026-10-30-command-center.md)
+- Superseded in part by: 2026-10-30 Removed in 3.0: guide, prompt-cache notice, two-writers rule (the guide)
 
 ## 2026-10-30: Engine versioning: minor by default, major only for a redesign
 
@@ -91,6 +190,8 @@ reconstructed from commit messages; their source is the commit. -->
   `## Rules`; replaces the rule that made every new contract key a major version.
 - Reason: additive contract changes do not break existing projects, and a major number should mark a redesign.
 - Source: [sessions/2026-10-30-command-center.md](sessions/2026-10-30-command-center.md)
+- Superseded in part by: 2026-10-30 Contract with an engine-owned skeleton (the rule is kept in the contract
+  `## Notes`; the contract path)
 
 ## 2026-10-30: Roadmap as the user's command center
 
@@ -133,6 +234,7 @@ reconstructed from commit messages; their source is the commit. -->
   `plugins/heliotrop/`. Hooks are tested on synthetic input (`tests/hooks/test.js`), never on a live session.
 - Reason: the engine runs in place, so a change takes effect in every project from the next session.
 - Source: [design/heliotrop-1.0.md](design/heliotrop-1.0.md), section 14
+- Superseded in part by: 2026-10-30 Contract with an engine-owned skeleton (the file is now `.claude/contract.md`)
 
 ## 2026-10-30: Name Heliotrop, version 1.0.0
 
@@ -190,6 +292,7 @@ reconstructed from commit messages; their source is the commit. -->
 - Reason: the orchestrator often waits on subagents longer than 5 minutes; one idle gap costs ~2.5x on 5m vs ~2.1x on
   1h, and a plugin cannot set the main session's TTL.
 - Source: [design/heliotrop-1.0.md](design/heliotrop-1.0.md), section 7
+- Superseded by: 2026-10-30 Removed in 3.0: guide, prompt-cache notice, two-writers rule
 
 ## 2026-10-30: Standard document set
 

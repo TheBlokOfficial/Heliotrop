@@ -2,22 +2,29 @@
 
 A Claude Code marketplace with one plugin, `heliotrop`: a project-agnostic orchestrator workflow. The main session
 (the orchestrator) works with the user: it takes decisions, writes briefs and judges results. Subagents do the reading
-and execution, so the main context stays small. Everything that differs between projects lives in each repository's
-optional project notes, `.claude/project.md`; the engine never contains a project's paths, commands or documents.
+and execution, so the main context stays small. Everything that differs between projects lives in the repository: the
+workflow contract `.claude/contract.md` and a marked block in the root `CLAUDE.md`. The engine never contains a
+project's paths, commands or documents.
 
 ## How it works
 
 | Area | Behaviour | Rule |
 |---|---|---|
 | Roles | User: direction and decisions. Orchestrator: plans, delegates, decides, integrates. Subagents: one slice each, from a brief, with a short return. | `core/orchestrator.md` |
-| Main context | Notices at 150k (reading moves to subagents) and 200k (hard point: `handover`), then every further 50k; notes line `main-context:`. | hard rules |
-| Subagent budget | Each subagent is told near `context-budget:` (default 100k), at it and past it; at the budget it returns `Status: partial` with the remaining steps. | hard rules |
-| User decisions | Deleting or overwriting data, anything outward-facing, choices that bind architecture, interfaces or direction, and scope changes: the orchestrator asks all open questions at once, each with a recommendation. | hard rules |
-| Writing agents | Two writing agents never touch the same files. | hard rules |
-| Guidance | Context economy, briefs, slices, focus, communication, session end, documents, prompt cache: a few sentences each, with the reason. | guidance |
-| Prompt cache | One notice when the main session writes the cache with a 5-minute TTL; the orchestrator offers `"promptCacheTtl": "1h"` in user settings only with approval. | guidance |
-| Project notes | Optional, short, free-form `.claude/project.md`, injected after the core at session start; precedence: the user, the notes, the engine. | `skills/init/notes-template.md` |
-| Roadmap | When the project keeps a status document, it is the user's command center: where the project stands, what waits for the user, stages with ticked and open steps. Written in the user's language. | `write-doc` `## Language` |
+| Main context | A notice point (reading moves to subagents, plan the landing) and a hard point (`handover`), then reminders. | hard rules |
+| Subagent budget | Each subagent is told near the budget, at it and past it; at the budget it returns `Status: partial` with the remaining steps. | hard rules |
+| Quality floor | Changes are verified by running something, larger ones reviewed by another agent, changed behaviour tested, no check weakened. Only the user lowers it, recorded in the contract. | hard rules |
+| User decisions | Deleting or overwriting data, anything outward-facing, choices that bind architecture, interfaces or direction, taste, and scope changes: the orchestrator asks all open questions at once, each with a recommendation. | hard rules |
+| Kinds of work | The mode follows the request: build, conversation or design (the orchestrator thinks with the user), one-off question (direct answer). | guidance |
+| Guidance | Context economy, briefs, slices, focus, communication, documents, session start and end: a few sentences each, with the reason. | guidance |
+| Contract | `.claude/contract.md` with a fixed skeleton: Workflow, Quality, Checks, Documents, User decisions, Overrides, Notes. Injected after the rules at session start; precedence: the user, the contract, the engine. | `skills/init/contract-template.md` |
+| CLAUDE.md block | Facts every agent needs (project and layout, language, conventions, always/never, engine boundary) between `engine:begin` and `engine:end` in the root `CLAUDE.md`. Reaches the main session and custom subagents. | `skills/init/claude-block-template.md` |
+| Guard | A project without `.claude/contract.md` gets nothing: no rules, notices, on-edit check or archive. One exception: 2.x project notes (`.claude/project.md`) produce a single line pointing to `/heliotrop:init`. | `hooks/common.js` |
+| Roadmap | The user's command center: where the project stands, what waits for the user, stages with ticked and open steps. Written in the user's language. | `write-doc` `## Language` |
+
+The numbers (subagent budget, main-context points, reminder step, warning share, state age) are set only in
+`hooks/common.js`. The rules the session receives show the values in effect for the project, including contract
+overrides.
 
 ## Layout
 
@@ -28,34 +35,33 @@ plugins/heliotrop/
   core/orchestrator.md                orchestrator rules, injected at session start
   agents/                             researcher, implementer, test-writer, reviewer, doc-writer, verifier
   skills/                             see Skills
-  hooks/                              SessionStart, PostToolUse and Stop hooks (Node.js)
+  hooks/                              SessionStart, PostToolUse and Stop hooks (Node.js); common.js holds the numbers
 tests/hooks/test.js                   hook smoke test on synthetic input
 build.bat, build.ps1                  packs the plugin into build/
 build/heliotrop-<version>.zip         packed plugin, rebuilt with every release
-docs/                                 design notes, decision register, roadmap
+docs/                                 design notes, decision register, roadmap, handover notes
 ```
 
 ## Skills
 
 | Skill | Use |
 |---|---|
-| `/heliotrop:init` | Set Heliotrop up in a repository: survey what exists, ask what the survey cannot show, write short project notes. Also updates existing notes and offers to rewrite a 1.x contract as notes. |
-| `/heliotrop:end` | Close a session: small leftovers, the status document and decision register if the project keeps them, the notes' end steps, a short report. |
+| `/heliotrop:init` | Set the engine up in a repository: survey what exists, ask what the survey cannot show, write the contract `.claude/contract.md` and the CLAUDE.md block, propose the document set (`docs/roadmap.md`, `docs/sessions/`; a decision register stays optional). Also reviews an existing setup and migrates 2.x project notes and 1.x contracts. |
+| `/heliotrop:end` | Close a session: small leftovers, the status document and decision register if the project keeps them, the contract's end steps, a short report. |
 | `/heliotrop:handover` | Like `end`, plus a handover note and how to resume in a fresh session. |
-| `/heliotrop:guide` | A short orientation on how Heliotrop works in this project. |
 | `heliotrop:write-doc` | Internal: rules for writing documents; optional templates in `skills/write-doc/templates/`: `decisions`, `roadmap`, `handover-note`, `adr`, `spec`, `changelog`. |
-| `heliotrop:protocol` | Internal: subagent protocol, preloaded into every Heliotrop agent. |
+| `heliotrop:protocol` | Internal: subagent protocol, preloaded into every engine agent. |
 
-The notes template is `skills/init/notes-template.md`.
+`end` and `handover` tell a project without a contract that the engine is not set up there; `init` always works.
 
 ## Hooks
 
 | Hook | Does |
 |---|---|
-| SessionStart | Injects the orchestrator rules and the project notes, or one line suggesting `/heliotrop:init` when there are none; resets the main-context notices after a compaction; deletes budget state older than 7 days. |
-| PostToolUse, Edit/Write | Runs the notes' `on-edit:` command for the edited file; a failure is reported back. |
-| PostToolUse, every tool | Main-context, subagent-budget and prompt-cache notices (`Heliotrop main context`, `Heliotrop context budget`, `Heliotrop cache`). |
-| Stop | In a project with notes, copies the session's transcripts to `~/.claude/heliotrop-archive/`. |
+| SessionStart | In a project with a contract: injects the orchestrator rules (numbers filled in) and the contract; resets the main-context notices after a compaction; deletes budget state past its age limit. Without a contract: silent, or the single legacy line for 2.x notes. |
+| PostToolUse, Edit/Write | Runs the contract's `on-edit:` command for the edited file; a failure is reported back (`On-edit check failed for <file>`). |
+| PostToolUse, every tool | Main-context and subagent-budget notices, prefixed `Main context:` and `Context budget:`. |
+| Stop | In a project with a contract, copies the session's transcripts to `~/.claude/heliotrop-archive/`. |
 
 ## Agents
 
@@ -65,8 +71,10 @@ The notes template is `skills/init/notes-template.md`.
 | `heliotrop:implementer` | sonnet | one scoped change plus its checks |
 | `heliotrop:test-writer` | sonnet | tests for a finished slice from its specification; reports defects |
 | `heliotrop:reviewer` | opus | review of diffs and designs; writes a report only where the brief names a path |
-| `heliotrop:doc-writer` | sonnet | documents per the project notes and templates |
+| `heliotrop:doc-writer` | sonnet | documents per the contract and templates |
 | `heliotrop:verifier` | haiku | runs checks or a checklist, reports the outcome |
+
+Subagents never commit.
 
 ## Install
 
@@ -86,12 +94,11 @@ claude plugin marketplace add <path to this repository>
 claude plugin install heliotrop@heliotrop --scope user
 ```
 
-A project with a 1.x contract keeps working: the contract is read as project notes. Run `/heliotrop:init` to rewrite it
-as short notes.
+Upgrading a project from 1.x or 2.x: the engine stays inactive there until `/heliotrop:init` migrates `.claude/project.md`
+into `.claude/contract.md` and the CLAUDE.md block. The old file is removed only after approval.
 
-Recommended user setting in `~/.claude/settings.json`: `"promptCacheTtl": "1h"`. The orchestrator often waits on
-subagents longer than 5 minutes, and a plugin cannot set the main session's cache TTL (orchestrator rules, prompt
-cache).
+Tip: set `"promptCacheTtl": "1h"` in `~/.claude/settings.json`. The orchestrator often waits on subagents longer than
+5 minutes, and a plugin cannot set the main session's cache TTL.
 
 The marketplace is a local directory, so the plugin runs in place: edits take effect at the next session start or
 after `/reload-plugins`. Onboard a project with `/heliotrop:init`.
@@ -108,6 +115,8 @@ identical zip.
 
 ## Changing the engine
 
-The rules for working on this repository are in its own project notes, [.claude/project.md](.claude/project.md). Changes
-are listed in [CHANGELOG.md](CHANGELOG.md), lasting decisions in [docs/decisions.md](docs/decisions.md), the state and open
-work in [docs/roadmap.md](docs/roadmap.md). The 2.0 design is in [docs/design/heliotrop-2.0.md](docs/design/heliotrop-2.0.md).
+This repository is the engine's source; its own working rules are in [.claude/contract.md](.claude/contract.md) and
+[CLAUDE.md](CLAUDE.md). Changes are listed in [CHANGELOG.md](CHANGELOG.md), lasting decisions in
+[docs/decisions.md](docs/decisions.md), the state and open work in [docs/roadmap.md](docs/roadmap.md). The 2.0 design is
+in [docs/design/heliotrop-2.0.md](docs/design/heliotrop-2.0.md); 3.0 has no design note, its decisions are in the
+register.

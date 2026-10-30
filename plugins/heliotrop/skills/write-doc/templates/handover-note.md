@@ -1,7 +1,7 @@
 # <YYYY-MM-DD>: <topic>
 
 <!-- Handover note: lets a new session continue the work. It stands on its own: links to files instead of copies, no
-story of how the work went. Language: `write-doc` `## Language`. -->
+story of how the work went. -->
 
 ## Done
 

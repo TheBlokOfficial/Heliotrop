@@ -1,6 +1,7 @@
-// Smoke test for the Heliotrop hooks on synthetic input: never touches a live session.
+// Smoke test for the engine hooks on synthetic input: never touches a live session.
 // Usage: node tests/hooks/test.js   (exit code 0 = all checks pass)
-// Creates its fixtures in a fresh folder under os.tmpdir(), points TEMP/TMP there and deletes it at the end.
+// Creates its fixtures in a fresh folder under os.tmpdir(), points TEMP/TMP (and the home folder) there and deletes it
+// at the end. The numbers come from hooks/common.js, the single source; only deliberate overrides are written here.
 'use strict';
 const fs = require('fs');
 const os = require('os');
@@ -8,18 +9,39 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 
 const HOOKS = path.resolve(__dirname, '..', '..', 'plugins', 'heliotrop', 'hooks');
+const REPO = path.resolve(__dirname, '..', '..');
+const common = require(path.join(HOOKS, 'common.js'));
+const {
+  DEFAULT_BUDGET, DEFAULT_MAIN_NOTICE, DEFAULT_MAIN_HARD, MAIN_REMIND_STEP, WARN_AT, REMIND_EVERY, formatK: K,
+} = common;
+
 const ROOT = fs.mkdtempSync(path.join(os.tmpdir(), 'heliotrop-hooks-test-'));
 const TMP = path.join(ROOT, 'tmp');
+const HOME = path.join(ROOT, 'home');
 const STATE = path.join(TMP, 'heliotrop-context-budget');
 const W = path.join(ROOT, 'work');
-const bareDir = path.join(W, 'nonotes');
-const notesDir = path.join(W, 'withnotes');
-fs.mkdirSync(TMP, { recursive: true });
-fs.mkdirSync(bareDir, { recursive: true });
-fs.mkdirSync(path.join(notesDir, '.claude'), { recursive: true });
-fs.writeFileSync(path.join(notesDir, '.claude', 'project.md'), '# Notes\nWe ship on Fridays.\ncontext-budget: 50k\nmain-context: 150k / 200k\n');
+const bareDir = path.join(W, 'nocontract'); // no contract, no notes
+const legacyDir = path.join(W, 'legacy'); // 2.x notes only
+const plainDir = path.join(W, 'plain'); // contract without overrides: the defaults apply
+const notesDir = path.join(W, 'withcontract'); // contract with overrides
+const deepDir = path.join(notesDir, 'src', 'deep'); // subdirectory of a project
+const editDir = path.join(W, 'edit'); // contract with an on-edit check
+const CONTRACT_TEXT = '# Project contract\nWe ship on Fridays.\ncontext-budget: 50k\nmain-context: 120k / 180k\n';
 
-const env = Object.assign({}, process.env, { TEMP: TMP, TMP: TMP, TMPDIR: TMP });
+function writeContract(dir, text, name) {
+  fs.mkdirSync(path.join(dir, '.claude'), { recursive: true });
+  fs.writeFileSync(path.join(dir, '.claude', name || 'contract.md'), text);
+}
+fs.mkdirSync(TMP, { recursive: true });
+fs.mkdirSync(HOME, { recursive: true });
+fs.mkdirSync(bareDir, { recursive: true });
+fs.mkdirSync(deepDir, { recursive: true });
+writeContract(legacyDir, '# Project notes\ncontext-budget: 50k\non-edit: exit 1\n', 'project.md');
+writeContract(plainDir, '# Project contract\n');
+writeContract(notesDir, CONTRACT_TEXT);
+writeContract(editDir, '# Project contract\non-edit: echo {file}; exit 1\n');
+
+const env = Object.assign({}, process.env, { TEMP: TMP, TMP, TMPDIR: TMP, HOME, USERPROFILE: HOME });
 delete env.CLAUDE_PROJECT_DIR;
 delete env.CLAUDE_PLUGIN_ROOT;
 
@@ -30,10 +52,8 @@ function run(hook, input, extraEnv) {
   return { code: r.status, out: r.stdout, err: r.stderr };
 }
 
-function usage(tokens, cc) {
-  const u = { input_tokens: 10, cache_creation_input_tokens: 0, cache_read_input_tokens: tokens - 10, output_tokens: 5000 };
-  if (cc) u.cache_creation = cc;
-  return u;
+function usage(tokens) {
+  return { input_tokens: 10, cache_creation_input_tokens: 0, cache_read_input_tokens: tokens - 10, output_tokens: 5000 };
 }
 function entry(u, side) { return JSON.stringify({ type: 'assistant', isSidechain: !!side, message: { role: 'assistant', usage: u } }); }
 function writeTranscript(f, lines) { fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, lines.join('\n') + '\n'); }
@@ -44,141 +64,229 @@ function parse(o) { try { return JSON.parse(o); } catch (e) { return null; } }
 function ctx(j) { return (j && j.hookSpecificOutput && j.hookSpecificOutput.additionalContext) || ''; }
 function lens(j) { return j ? `model=${ctx(j).length} user=${(j.systemMessage || '').length}` : ''; }
 function readJson(f) { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { return null; } }
+const silent = (r) => r.out === '' && r.err === '' && r.code === 0;
 
 function tests() {
   const SID = 'sess1';
   const main = path.join(W, 'proj', `${SID}.jsonl`);
-  const base = { session_id: SID, transcript_path: main, cwd: bareDir, hook_event_name: 'PostToolUse', tool_name: 'Read' };
-  const one = { ephemeral_5m_input_tokens: 0, ephemeral_1h_input_tokens: 500 };
+  const base = { session_id: SID, transcript_path: main, cwd: plainDir, hook_event_name: 'PostToolUse', tool_name: 'Read' };
   let r; let j; let c;
 
-  // Main thread below 150k: a sidechain entry with 300k must be skipped.
-  writeTranscript(main, [entry(usage(140000, one)), entry(usage(300000, one), true)]);
-  r = run('context-budget.js', base);
-  check('main <150k no output (sidechain 300k skipped)', r.out === '' && r.code === 0, `out='${r.out}' code=${r.code}`);
+  // Guard: without a contract no hook does anything, whatever the input.
+  const noC = Object.assign({}, base, { cwd: bareDir });
+  writeTranscript(main, [entry(usage(DEFAULT_MAIN_HARD + MAIN_REMIND_STEP))]);
+  r = run('context-budget.js', noC);
+  check('no contract: context-budget main silent even past the hard point', silent(r), `out='${r.out}' err='${r.err}'`);
+  const agentN = path.join(W, 'proj', SID, 'subagents', 'agent-nc.jsonl');
+  writeTranscript(agentN, [entry(usage(DEFAULT_BUDGET * 2), true)]);
+  r = run('context-budget.js', Object.assign({}, noC, { agent_id: 'nc' }));
+  check('no contract: context-budget subagent silent even far past the budget', silent(r), `out='${r.out}' err='${r.err}'`);
+  check('no contract: no state written', !fs.existsSync(STATE) || fs.readdirSync(STATE).length === 0, fs.existsSync(STATE) ? fs.readdirSync(STATE).join(',') : 'no state dir');
+  r = run('session-start.js', { session_id: 'x', source: 'startup', cwd: bareDir });
+  check('no contract: session-start silent (no rules, no init suggestion)', silent(r), `out='${r.out}' err='${r.err}'`);
+  r = run('post-edit.js', { cwd: bareDir, tool_name: 'Write', tool_input: { file_path: path.join(bareDir, 'a.txt') } });
+  check('no contract: post-edit silent', silent(r), `out='${r.out}' err='${r.err}' code=${r.code}`);
+  r = run('archive-transcript.js', { session_id: SID, transcript_path: main, cwd: bareDir });
+  check('no contract: archive silent and copies nothing', silent(r) && !fs.existsSync(path.join(HOME, '.claude', 'heliotrop-archive')),
+    `out='${r.out}' err='${r.err}'`);
 
-  writeTranscript(main, [entry(usage(150000, one))]);
+  // Legacy 2.x notes without a contract: session-start gives one line, the other hooks stay silent.
+  const legacyLine = 'Project notes from an earlier engine version found (.claude/project.md); the engine is inactive until ' +
+    'they are migrated with /heliotrop:init.';
+  r = run('session-start.js', { session_id: 'x', source: 'startup', cwd: legacyDir });
+  j = parse(r.out);
+  check('legacy project.md: session-start injects exactly the legacy line', j && ctx(j) === legacyLine && r.code === 0, JSON.stringify(ctx(j)));
+  r = run('session-start.js', { session_id: 'x', source: 'startup', cwd: path.join(legacyDir, 'sub') });
+  check('legacy project.md from a missing subdirectory still resolves upward', ctx(parse(r.out)) === legacyLine, JSON.stringify(ctx(parse(r.out))));
+  r = run('context-budget.js', Object.assign({}, noC, { cwd: legacyDir }));
+  check('legacy project.md: context-budget silent', silent(r), `out='${r.out}'`);
+  r = run('post-edit.js', { cwd: legacyDir, tool_name: 'Write', tool_input: { file_path: path.join(legacyDir, 'a.txt') } });
+  check('legacy project.md: post-edit silent (its on-edit is not run)', silent(r), `out='${r.out}' err='${r.err}' code=${r.code}`);
+  r = run('archive-transcript.js', { session_id: SID, transcript_path: main, cwd: legacyDir });
+  check('legacy project.md: archive silent and copies nothing', silent(r) && !fs.existsSync(path.join(HOME, '.claude', 'heliotrop-archive')), `out='${r.out}'`);
+
+  // Finding the project: nearest directory upwards with .claude/contract.md.
+  check('findProjectDir: from a subdirectory', common.findProjectDir(deepDir) === path.resolve(notesDir), String(common.findProjectDir(deepDir)));
+  check('findProjectDir: none gives null', common.findProjectDir(bareDir) === null, String(common.findProjectDir(bareDir)));
+  check('findProjectDir: a contract-less project.md is not a contract', common.findProjectDir(legacyDir) === null, String(common.findProjectDir(legacyDir)));
+
+  // Main thread below the notice point: a sidechain entry far above must be skipped.
+  writeTranscript(main, [entry(usage(DEFAULT_MAIN_NOTICE - 10000)), entry(usage(DEFAULT_MAIN_HARD + 100000), true)]);
+  r = run('context-budget.js', base);
+  check('main below the notice point: no output (sidechain skipped)', r.out === '' && r.code === 0, `out='${r.out}' code=${r.code}`);
+
+  writeTranscript(main, [entry(usage(DEFAULT_MAIN_NOTICE))]);
   r = run('context-budget.js', base); j = parse(r.out);
-  check('main 150k notice', j && /^Heliotrop main context: ~150k/.test(ctx(j)) && /write down open decisions/.test(ctx(j)) &&
-    /\(orchestrator rules, Hard rules\)/.test(ctx(j)) && !/session file/.test(ctx(j)) && /^Heliotrop main context/.test(j.systemMessage),
+  check('main notice point', j && ctx(j).startsWith(`Main context: ~${K(DEFAULT_MAIN_NOTICE)}`) && /Plan the landing/.test(ctx(j)) &&
+    /\(orchestrator rules, Hard rules\)/.test(ctx(j)) && !/Heliotrop/.test(ctx(j)) && j.systemMessage.startsWith('Main context: '),
     `${j && j.systemMessage} [${lens(j)}]`);
   check('main notice texts <= 300 chars', j && ctx(j).length <= 300 && (j.systemMessage || '').length <= 300, lens(j));
   r = run('context-budget.js', base);
-  check('main 150k not repeated', r.out === '', `out='${r.out}'`);
+  check('main notice point not repeated', r.out === '', `out='${r.out}'`);
 
-  writeTranscript(main, [entry(usage(200000, one))]);
+  writeTranscript(main, [entry(usage(DEFAULT_MAIN_HARD))]);
   r = run('context-budget.js', base); j = parse(r.out);
-  check('main 200k hard point', j && /hard point/.test(ctx(j)) && /heliotrop:handover/.test(ctx(j)) && /ask what next/.test(ctx(j)) &&
-    /\(orchestrator rules, Hard rules\)/.test(ctx(j)) && /handing over/.test(j.systemMessage), `${j && j.systemMessage} [${lens(j)}]`);
+  check('main hard point', j && /^Main context: /.test(ctx(j)) && /hard point/.test(ctx(j)) && /heliotrop:handover/.test(ctx(j)) &&
+    /ask what next/.test(ctx(j)) && /\(orchestrator rules, Hard rules\)/.test(ctx(j)) && /handing over/.test(j.systemMessage),
+    `${j && j.systemMessage} [${lens(j)}]`);
 
-  writeTranscript(main, [entry(usage(250000, one))]);
+  // Reminder step: one reminder per further MAIN_REMIND_STEP past the hard point.
+  const remind1 = DEFAULT_MAIN_HARD + MAIN_REMIND_STEP;
+  writeTranscript(main, [entry(usage(remind1))]);
   r = run('context-budget.js', base); j = parse(r.out);
-  check('main 250k reminder', j && /past the ~200k hard point/.test(ctx(j)), `${j && j.systemMessage} [${lens(j)}]`);
+  check('main first reminder one step past the hard point', j && ctx(j).startsWith(`Main context: ~${K(remind1)}`) &&
+    new RegExp(`past the ~${K(DEFAULT_MAIN_HARD)} hard point`).test(ctx(j)), `${j && j.systemMessage} [${lens(j)}]`);
   r = run('context-budget.js', base);
-  check('main 250k not repeated', r.out === '', `out='${r.out}'`);
-
-  // A compaction resets the level and keeps cacheNotice.
-  fs.writeFileSync(path.join(STATE, `main-${SID}.json`), JSON.stringify({ level: 2, cacheNotice: true }));
-  run('session-start.js', { session_id: SID, source: 'compact', cwd: bareDir, hook_event_name: 'SessionStart' });
-  const st = readJson(path.join(STATE, `main-${SID}.json`));
-  check('compact resets level', st && st.level === -1 && st.cacheNotice === true, JSON.stringify(st));
-  writeTranscript(main, [entry(usage(160000, one))]);
+  check('main first reminder not repeated', r.out === '', `out='${r.out}'`);
+  writeTranscript(main, [entry(usage(remind1 + MAIN_REMIND_STEP - 1000))]);
+  r = run('context-budget.js', base);
+  check('main no reminder within the same step', r.out === '', `out='${r.out}'`);
+  const remind2 = remind1 + MAIN_REMIND_STEP;
+  writeTranscript(main, [entry(usage(remind2))]);
   r = run('context-budget.js', base); j = parse(r.out);
-  check('after compact 160k notice again', j && /~160k/.test(j.systemMessage), `${j && j.systemMessage}`);
+  check('main next reminder after a further step', j && ctx(j).startsWith(`Main context: ~${K(remind2)}`) && /hard point/.test(ctx(j)),
+    `${j && j.systemMessage}`);
 
-  // Prompt cache: 5m writes get one notice, 1h writes none.
+  // A compaction resets the level.
+  fs.writeFileSync(path.join(STATE, `main-${SID}.json`), JSON.stringify({ level: 2 }));
+  run('session-start.js', { session_id: SID, source: 'compact', cwd: plainDir, hook_event_name: 'SessionStart' });
+  const st = readJson(path.join(STATE, `main-${SID}.json`));
+  check('compact resets level, no cache field', st && st.level === -1 && !('cacheNotice' in st), JSON.stringify(st));
+  const afterCompact = DEFAULT_MAIN_NOTICE + 10000;
+  writeTranscript(main, [entry(usage(afterCompact))]);
+  r = run('context-budget.js', base); j = parse(r.out);
+  check('after compact the notice point fires again', j && new RegExp(`~${K(afterCompact)}`).test(j.systemMessage), `${j && j.systemMessage}`);
+
+  // No prompt-cache notice any more: a 5-minute cache write at small context is silent.
   const SID2 = 'sess2';
   const main2 = path.join(W, 'proj', `${SID2}.jsonl`);
-  const base2 = Object.assign({}, base, { session_id: SID2, transcript_path: main2 });
-  writeTranscript(main2, [entry(usage(20000, { ephemeral_5m_input_tokens: 3000, ephemeral_1h_input_tokens: 0 }))]);
-  r = run('context-budget.js', base2); j = parse(r.out);
-  check('5m cache notice', j && /^Heliotrop cache:/.test(ctx(j)) && /^Heliotrop cache:/.test(j.systemMessage), `${j && j.systemMessage} [${lens(j)}]`);
-  check('cache notice texts <= 300 chars', j && ctx(j).length <= 300 && (j.systemMessage || '').length <= 300, lens(j));
-  r = run('context-budget.js', base2);
-  check('5m cache notice once', r.out === '', `out='${r.out}'`);
-  const SID3 = 'sess3';
-  const main3 = path.join(W, 'proj', `${SID3}.jsonl`);
-  writeTranscript(main3, [entry(usage(20000, { ephemeral_5m_input_tokens: 0, ephemeral_1h_input_tokens: 3000 }))]);
-  r = run('context-budget.js', Object.assign({}, base, { session_id: SID3, transcript_path: main3 }));
-  check('1h cache no notice', r.out === '', `out='${r.out}'`);
+  const u5 = usage(20000);
+  u5.cache_creation = { ephemeral_5m_input_tokens: 3000, ephemeral_1h_input_tokens: 0 };
+  writeTranscript(main2, [entry(u5)]);
+  r = run('context-budget.js', Object.assign({}, base, { session_id: SID2, transcript_path: main2 }));
+  check('5-minute cache write: no notice', r.out === '', `out='${r.out}'`);
 
-  // Subagent with agent_id and no project notes: default 100k budget.
+  // Subagent in a project without overrides: default budget.
   const agentF = path.join(W, 'proj', SID, 'subagents', 'agent-abc.jsonl');
-  writeTranscript(agentF, [entry(usage(85000), true)]);
+  const warnTokens = Math.round(DEFAULT_BUDGET * (WARN_AT + 0.05));
+  writeTranscript(agentF, [entry(usage(warnTokens), true)]);
   const sub = Object.assign({}, base, { agent_id: 'abc', agent_type: 'heliotrop:researcher' });
   r = run('context-budget.js', sub); j = parse(r.out);
-  check('subagent no notes 85k warning (default 100k)',
-    j && /^Heliotrop context budget: ~85k tokens of the ~100k/.test(ctx(j)) && /Plan to finish within the budget/.test(ctx(j)) &&
-    /`Status: partial` with the rest \(protocol\)\.$/.test(ctx(j)) && !j.systemMessage, ctx(j).slice(0, 90));
+  const lvl0 = ctx(j);
+  check('subagent warning at the default budget',
+    j && lvl0.startsWith(`Context budget: ~${K(warnTokens)} tokens of the ~${K(DEFAULT_BUDGET)}`) && /Plan to finish within the budget/.test(lvl0) &&
+    /`Status: partial` with the remaining steps \(protocol\)\.$/.test(lvl0) && !/Heliotrop/.test(lvl0) && !j.systemMessage, lvl0.slice(0, 90));
   r = run('context-budget.js', sub);
   check('subagent warning once', r.out === '', `out='${r.out}'`);
-  writeTranscript(agentF, [entry(usage(101000), true)]);
+  const pastTokens = DEFAULT_BUDGET + 1000;
+  writeTranscript(agentF, [entry(usage(pastTokens), true)]);
   r = run('context-budget.js', sub); j = parse(r.out);
-  check('subagent 101k budget reached', j && /^Heliotrop context budget: ~101k tokens, past the ~100k slice budget\. Wrap up:/.test(ctx(j)) &&
-    /only the build, tests and commit of finished work may still run; if only these remained and they pass, return as usual \(protocol\)\.$/.test(ctx(j)), ctx(j).slice(0, 90));
-  writeTranscript(agentF, [entry(usage(125000), true)]);
+  const lvl1 = ctx(j);
+  check('subagent budget reached', j && lvl1.startsWith(`Context budget: ~${K(pastTokens)} tokens, past the ~${K(DEFAULT_BUDGET)} slice budget. Wrap up:`) &&
+    /`Status: partial` with the remaining steps; only the build and tests of finished work may still run; if only these remained and they pass, return as usual \(protocol\)\.$/.test(lvl1) &&
+    !/commit/.test(lvl1), lvl1.slice(0, 90));
+  check('subagent level 0 and 1 use the same wording for the rest', /with the remaining steps/.test(lvl0) && /with the remaining steps/.test(lvl1), 'both say "with the remaining steps"');
+  const farTokens = Math.round(DEFAULT_BUDGET * (1 + 2 * REMIND_EVERY + 0.05));
+  writeTranscript(agentF, [entry(usage(farTokens), true)]);
   r = run('context-budget.js', sub); j = parse(r.out);
-  check('subagent 125k far past, stop', j && /far past the ~100k slice budget\. Stop now and return `Status: partial` \(protocol\)\.$/.test(ctx(j)), ctx(j).slice(0, 90));
-  // Subagent in a project whose notes set a 50k budget.
+  check('subagent far past the budget: stop', j && ctx(j).startsWith('Context budget: ') &&
+    new RegExp(`far past the ~${K(DEFAULT_BUDGET)} slice budget\\. Stop now and return \`Status: partial\` \\(protocol\\)\\.$`).test(ctx(j)), ctx(j).slice(0, 90));
+  // Subagent in a project whose contract overrides the budget (50k).
   const agentG = path.join(W, 'proj', SID, 'subagents', 'agent-def.jsonl');
   writeTranscript(agentG, [entry(usage(45000), true)]);
   r = run('context-budget.js', Object.assign({}, sub, { agent_id: 'def', cwd: notesDir })); j = parse(r.out);
-  check('subagent notes 50k budget', j && /~45k tokens of the ~50k/.test(ctx(j)), ctx(j).slice(0, 90));
-  // Overrides in the notes are matched at line start only: an indented line does not count.
+  check('subagent with a contract override of the budget', j && /~45k tokens of the ~50k/.test(ctx(j)), ctx(j).slice(0, 90));
+  // The same from a subdirectory of the project.
+  const agentS = path.join(W, 'proj', SID, 'subagents', 'agent-sub.jsonl');
+  writeTranscript(agentS, [entry(usage(45000), true)]);
+  r = run('context-budget.js', Object.assign({}, sub, { agent_id: 'sub', cwd: deepDir })); j = parse(r.out);
+  check('contract found from a subdirectory cwd (context-budget)', j && /~45k tokens of the ~50k/.test(ctx(j)), ctx(j).slice(0, 90));
+  // Overrides are matched at line start only: an indented line does not count.
   const indentDir = path.join(W, 'indented');
-  fs.mkdirSync(path.join(indentDir, '.claude'), { recursive: true });
-  fs.writeFileSync(path.join(indentDir, '.claude', 'project.md'), '# Notes\n  context-budget: 50k\n  main-context: 10k / 20k\n');
+  writeContract(indentDir, '# Project contract\n  context-budget: 50k\n  main-context: 10k / 20k\n');
   const agentH = path.join(W, 'proj', SID, 'subagents', 'agent-ghi.jsonl');
   writeTranscript(agentH, [entry(usage(45000), true)]);
   r = run('context-budget.js', Object.assign({}, sub, { agent_id: 'ghi', cwd: indentDir }));
-  check('override not at line start ignored (subagent default 100k)', r.out === '', `out='${r.out}'`);
-  // main-context override from the notes: 30k / 40k.
+  check('override not at line start ignored (default budget)', r.out === '', `out='${r.out}'`);
+  // main-context override from the contract: 30k / 40k.
   const mainDir = path.join(W, 'mainpoints');
-  fs.mkdirSync(path.join(mainDir, '.claude'), { recursive: true });
-  fs.writeFileSync(path.join(mainDir, '.claude', 'project.md'), '# Notes\nmain-context: 30k / 40k\n');
+  writeContract(mainDir, '# Project contract\nmain-context: 30k / 40k\n');
   const SID4 = 'sess4';
   const main4 = path.join(W, 'proj', `${SID4}.jsonl`);
-  writeTranscript(main4, [entry(usage(35000, one))]);
+  writeTranscript(main4, [entry(usage(35000))]);
   r = run('context-budget.js', Object.assign({}, base, { session_id: SID4, transcript_path: main4, cwd: mainDir })); j = parse(r.out);
-  check('main-context override 30k notice', j && /^Heliotrop main context: ~35k/.test(ctx(j)), `${j && j.systemMessage}`);
+  check('main-context override: notice at its first point', j && /^Main context: ~35k/.test(ctx(j)), `${j && j.systemMessage}`);
   // Subagent calls leave the main state alone.
   const st2 = readJson(path.join(STATE, `main-${SID}.json`));
   check('subagent call leaves main state', st2 && st2.level === 0, JSON.stringify(st2));
 
-  // SessionStart: the core always, then the project notes or the init line, with a fake plugin root.
+  // post-edit: the contract's on-edit check, found from the project or a subdirectory.
+  const edited = path.join(editDir, 'a.txt');
+  r = run('post-edit.js', { cwd: editDir, tool_name: 'Write', tool_input: { file_path: edited } });
+  check('post-edit failing check: exit 2 and the notice prefix', r.code === 2 && r.err.startsWith(`On-edit check failed for ${edited}:`) && !/Heliotrop/.test(r.err),
+    `code=${r.code} err='${r.err.slice(0, 80)}'`);
+  fs.mkdirSync(path.join(editDir, 'sub'), { recursive: true });
+  r = run('post-edit.js', { cwd: path.join(editDir, 'sub'), tool_name: 'Write', tool_input: { file_path: edited } });
+  check('contract found from a subdirectory cwd (post-edit)', r.code === 2 && /^On-edit check failed for /.test(r.err), `code=${r.code}`);
+  r = run('post-edit.js', { cwd: plainDir, tool_name: 'Write', tool_input: { file_path: edited } });
+  check('post-edit without an on-edit line: silent', silent(r), `code=${r.code} err='${r.err}'`);
+
+  // archive: with a contract the transcript is copied (home folder is redirected into the fixtures).
+  r = run('archive-transcript.js', { session_id: SID, transcript_path: main, cwd: deepDir });
+  check('archive with a contract found from a subdirectory copies the transcript',
+    r.code === 0 && fs.existsSync(path.join(HOME, '.claude', 'heliotrop-archive', 'proj', `${SID}.jsonl`)), `code=${r.code}`);
+
+  // SessionStart: the rules with the placeholders replaced, then the contract, with a fake plugin root.
   const fakeRoot = path.join(W, 'plugin');
   fs.mkdirSync(path.join(fakeRoot, 'core'), { recursive: true });
-  fs.writeFileSync(path.join(fakeRoot, 'core', 'orchestrator.md'), [
-    '# Heliotrop 2.0: orchestrator rules', '', 'Intro.', '', '## Hard rules', 'H body', '', '## Guidance', 'G body', ''].join('\n'));
-  const initLine = 'No project notes (.claude/project.md): suggest /heliotrop:init at most once, only when the work would benefit.';
-  r = run('session-start.js', { session_id: 'x', source: 'startup', cwd: bareDir }, { CLAUDE_PLUGIN_ROOT: fakeRoot });
+  const rulesFixture = [
+    '# Orchestrator rules', '', 'Intro.', '',
+    '## Hard rules', 'Budget {{context-budget}}; notice {{main-notice}}; hard {{main-hard}}; step {{main-remind}}; again {{context-budget}}.', '',
+    '## Guidance', 'G body', ''].join('\n');
+  fs.writeFileSync(path.join(fakeRoot, 'core', 'orchestrator.md'), rulesFixture);
+  const expectedLine = (b, n, h, s) => `Budget ${b}; notice ${n}; hard ${h}; step ${s}; again ${b}.`;
+  r = run('session-start.js', { session_id: 'x', source: 'startup', cwd: plainDir }, { CLAUDE_PLUGIN_ROOT: fakeRoot });
   c = ctx(parse(r.out));
-  check('no notes: full core, init line last, no light mode', c.startsWith('# Heliotrop 2.0: orchestrator rules') && /## Guidance\nG body/.test(c) &&
-    c.trimEnd().endsWith(initLine) && !/light mode|Project notes \(|Session file template/.test(c), JSON.stringify(c.slice(-140)));
+  check('placeholders replaced by the defaults, none left',
+    c.includes(expectedLine(K(DEFAULT_BUDGET), K(DEFAULT_MAIN_NOTICE), K(DEFAULT_MAIN_HARD), K(MAIN_REMIND_STEP))) && !c.includes('{{'),
+    JSON.stringify(c.split('\n')[5]));
   r = run('session-start.js', { session_id: 'x', source: 'startup', cwd: notesDir }, { CLAUDE_PLUGIN_ROOT: fakeRoot });
   c = ctx(parse(r.out));
-  check('notes: core, then the notes under their heading, no init line', c.startsWith('# Heliotrop 2.0: orchestrator rules') &&
-    /G body\n\n# Project notes \(\.claude\/project\.md\)\n\n# Notes\nWe ship on Fridays\./.test(c) && c.trimEnd().endsWith('main-context: 150k / 200k') &&
-    !/No project notes|light mode|Session file template/.test(c), JSON.stringify(c.slice(-160)));
+  check('placeholders replaced by the contract overrides, none left',
+    c.includes(expectedLine('50k', '120k', '180k', K(MAIN_REMIND_STEP))) && !c.includes('{{'), JSON.stringify(c.split('\n')[5]));
+  check('contract follows the rules under its heading, no init suggestion',
+    c.startsWith('# Orchestrator rules') && /G body\n\n# Project contract \(\.claude\/contract\.md\)\n\n# Project contract\nWe ship on Fridays\./.test(c) &&
+    c.trimEnd().endsWith('main-context: 120k / 180k') && !/\/heliotrop:init|No project notes|earlier engine version/.test(c),
+    JSON.stringify(c.slice(-120)));
+  r = run('session-start.js', { session_id: 'x', source: 'startup', cwd: deepDir }, { CLAUDE_PLUGIN_ROOT: fakeRoot });
+  check('contract found from a subdirectory cwd (session-start)', ctx(parse(r.out)) === c, `len=${ctx(parse(r.out)).length}`);
+  r = run('session-start.js', { session_id: 'x', source: 'startup', cwd: notesDir }, { CLAUDE_PLUGIN_ROOT: fakeRoot, CLAUDE_PROJECT_DIR: deepDir });
+  check('CLAUDE_PROJECT_DIR is walked up as well', ctx(parse(r.out)) === c, `len=${ctx(parse(r.out)).length}`);
 
-  // The real orchestrator rules, without CLAUDE_PLUGIN_ROOT (resolved from the hook's own path).
+  // The real orchestrator rules, without CLAUDE_PLUGIN_ROOT (resolved from the hook's own path). Tolerant: the
+  // rules may not contain placeholders yet; when they do, the defaults must appear in their place.
   const realRules = fs.readFileSync(path.join(HOOKS, '..', 'core', 'orchestrator.md'), 'utf8').trimEnd();
-  r = run('session-start.js', { session_id: 'x', source: 'startup', cwd: bareDir });
+  r = run('session-start.js', { session_id: 'x', source: 'startup', cwd: plainDir });
   c = ctx(parse(r.out));
-  check('real orchestrator.md without notes', r.code === 0 && c.startsWith(realRules) && c.trimEnd().endsWith(initLine) && !/light mode/.test(c),
-    `len=${c.length} tail=${JSON.stringify(c.slice(-60))}`);
-  r = run('session-start.js', { session_id: 'x', source: 'startup', cwd: notesDir });
-  c = ctx(parse(r.out));
-  check('real orchestrator.md with notes', r.code === 0 && c.startsWith(realRules) && c.includes('\n\n# Project notes (.claude/project.md)\n\n# Notes\nWe ship on Fridays.') &&
-    !/light mode|Session file template/.test(c), JSON.stringify(c.slice(-100)));
+  const hasPlaceholders = /\{\{(context-budget|main-notice|main-hard|main-remind)\}\}/.test(realRules);
+  const realExpected = realRules.split('{{context-budget}}').join(K(DEFAULT_BUDGET)).split('{{main-notice}}').join(K(DEFAULT_MAIN_NOTICE))
+    .split('{{main-hard}}').join(K(DEFAULT_MAIN_HARD)).split('{{main-remind}}').join(K(MAIN_REMIND_STEP));
+  check('real orchestrator.md: rules with the defaults substituted, then the contract, no placeholder left',
+    r.code === 0 && c.startsWith(realExpected) && !c.includes('{{') && c.includes('\n\n# Project contract (.claude/contract.md)\n\n# Project contract'),
+    `placeholders in orchestrator.md: ${hasPlaceholders ? 'yes' : 'not yet'}; len=${c.length}`);
 
-  // State files older than 7 days are deleted on SessionStart.
+  // State files older than 7 days are deleted on SessionStart, with or without a contract.
   const old = path.join(STATE, 'agent-old.json');
   fs.writeFileSync(old, '{"level":1}');
   const t = (Date.now() - 8 * 24 * 3600 * 1000) / 1000;
   fs.utimesSync(old, t, t);
   run('session-start.js', { session_id: 'x', source: 'startup', cwd: bareDir });
   check('state older than 7 days deleted', !fs.existsSync(old) && fs.existsSync(path.join(STATE, `main-${SID}.json`)), fs.readdirSync(STATE).join(','));
+
+  // The plugin version equals the newest version heading of the CHANGELOG.
+  const version = (readJson(path.join(REPO, 'plugins', 'heliotrop', '.claude-plugin', 'plugin.json')) || {}).version;
+  const heading = (fs.readFileSync(path.join(REPO, 'CHANGELOG.md'), 'utf8').match(/^## (\d+\.\d+\.\d+)\b/m) || [])[1];
+  check('plugin.json version equals the newest CHANGELOG heading', version && version === heading, `plugin.json=${version} CHANGELOG=${heading}`);
 
   // Every hook parses.
   for (const f of fs.readdirSync(HOOKS).filter((n) => n.endsWith('.js'))) {

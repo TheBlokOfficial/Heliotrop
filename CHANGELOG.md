@@ -3,6 +3,55 @@
 <!-- Changes visible to users of the engine, newest version first. Versions before 1.0.0 (the `stack` plugin, 0.1.0 to
 0.8.0) are described in the git log. -->
 
+## 3.0.0 — 2026-10-30
+
+No design note: the decisions are in [docs/decisions.md](docs/decisions.md).
+
+### BREAKING
+
+- The contract `.claude/contract.md` replaces the project notes `.claude/project.md`. It has a fixed skeleton owned by
+  the engine (Workflow, Quality, Checks, Documents, User decisions, Overrides, Notes); the project owns the content.
+  The hook keys `context-budget:`, `main-context:` and `on-edit:` keep their names. Default values are never written
+  into a contract.
+- Guard: a project without `.claude/contract.md` gets nothing from the hooks (no rules, notices, on-edit check or
+  archive) and `end` and `handover` say the engine is not set up. A project with 2.x notes only gets one line
+  pointing to `/heliotrop:init`.
+- Migration: run `/heliotrop:init` in each 2.x or 1.x project. It moves the content of `.claude/project.md` into the
+  contract and the CLAUDE.md block and removes the old file after approval.
+
+### Added
+
+- Quality floor as a hard rule: changes are verified by running something (otherwise "not verified" with the reason),
+  larger ones reviewed by an agent that did not write them, changed behaviour tested, no check weakened. Only the
+  user lowers it, recorded with the reason in the contract `## Quality`. The verifier reports `NO CHECKS` when none
+  are defined.
+- CLAUDE.md block (`engine:begin` / `engine:end`) managed by `init`: project and layout, language, conventions,
+  always/never, and a text-only warning not to edit the engine's files. It reaches custom subagents.
+- `init` proposes the standard document set `docs/roadmap.md` and `docs/sessions/`; the decision register stays
+  optional.
+- Orchestrator rules: kinds of work as a mode selector, a section on the user's intent, the notice point as planning
+  the landing; Focus and Communication depend on the mode.
+- `hooks/common.js` holds all numbers and the shared contract parsing; `session-start.js` fills the placeholders
+  `{{context-budget}}`, `{{main-notice}}`, `{{main-hard}}` and `{{main-remind}}` in the rules with the values in
+  effect for the project.
+
+### Changed
+
+- Notice prefixes drop the engine name: `Context budget:`, `Main context:`, `On-edit check failed for`.
+- Single sources: the return format only in `protocol`, reserved user decisions in the orchestrator's hard rules
+  (`protocol` carries a short category list for subagents), numbers only in `common.js`; subagents never commit, the
+  orchestrator commits only as the contract says and after approval.
+- Project-bound text and template comments no longer name the engine (except the engine-boundary paragraph of the
+  CLAUDE.md block); terms: contract, subagent.
+
+### Removed
+
+- The `guide` skill.
+- The prompt-cache notice (hook code, state field and tests); the install tip for `"promptCacheTtl": "1h"` stays in
+  the README.
+- The hard rule on two writing agents (Slices already keeps parallel work on disjoint files).
+- Engine-repo specifics in generic skills.
+
 ## 2.1.0 — 2026-10-30
 
 ### Changed
